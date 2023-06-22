@@ -69,7 +69,7 @@ class Header(ttk.Frame):
         # bg canvas for clock
         self.clock_canvas = ttk.Canvas(
             self,
-            height=100,
+            height=80,
             width=1600
         )
         self.clock_canvas.pack()
@@ -78,7 +78,7 @@ class Header(ttk.Frame):
         
         self.time = self.clock_canvas.create_text(
             20.0,
-            50.0,
+            40.0,
             anchor="w",
             text="00:00:00",
             fill="#121212",
