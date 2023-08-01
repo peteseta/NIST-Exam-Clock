@@ -1,151 +1,237 @@
 from tkinter import Tk, Canvas, Entry, Text, Button, PhotoImage, Listbox
 from tkinter.constants import *
+import ttkbootstrap as ttk
+from ttkbootstrap.scrolled import ScrolledFrame
 
-from style import HEADING
+from style import HEADING, round_rectangle
 
 # list of sections, handles creating and removing sections, numbering, etc.
 class EditorSectionList:
-    pass
+    def __init__(self, parent, existing_sections, callback) -> None:
+        self.parent = parent
+        self.callback = callback
+        
+        # stores the UI components
+        self.components = []
+        self.section_count = 0
+        
+        # if there are existing sections, populate components
+        if len(existing_sections) > 0:
+            self.section_count = len(existing_sections)
+            for index, section in enumerate(existing_sections):
+                self.components.append(EditorSection())
+        
+        # init heading
+        self.parent.create_text(
+            522,
+            48,
+            anchor="nw",
+            text="Sections:",
+            fill="#121212",
+            font=HEADING[1]
+        )
+
+        self.modify = EditorSectionModify(self.parent, self)
+    
+    def add_section(self):
+        self.section_count += 1
+        
+        self.modify.destroy()
+        self.modify = EditorSectionModify(self.parent, self)
+        
+        self.components.append(EditorSection(self.parent, self.section_count))
+        
+    def remove_section(self):
+        self.section_count -= 1
+        
+        self.modify.destroy()
+        self.modify = EditorSectionModify(self.parent, self)
+        
+        self.components[-1].canvas.destroy()
+        self.components.pop(-1)
+        
+    def apply(self):
+        print("sections modified")
+        # use self.callback to call main.py -> EditorPage.register_sections()
+    
+    def destroy(self):
+        self.modify.destroy()
+        for component in self.components:
+            component.canvas.destroy()
+        
+
+class EditorSection:
+    def __init__(self, parent, section_count):
+        self.canvas = Canvas(parent, width=600, height=170)
+        self.canvas.place(x=522.0, y=(96.0 + (188 * (section_count - 1))))
+        
+        self.section_bg = round_rectangle(
+            self.canvas,
+            0,
+            0,
+            600,
+            170,
+            radius=12,
+            fill="#F5F5F5",
+            outline=""
+        )
+        self.section_number = self.canvas.create_text(
+            20,
+            20,
+            anchor="nw",
+            text=str(section_count),
+            fill="#121212",
+            font=HEADING[3]
+        )
+        self.separator_line = self.canvas.create_rectangle(
+            47,
+            30,
+            52,
+            150,
+            fill="#EEEEEE",
+            outline=""
+        )
+        self.section_name_label = self.canvas.create_text(
+            70,
+            30,
+            anchor="nw",
+            text="Section Name:",
+            fill="#121212",
+            font=HEADING[3]
+        )
+        self.section_name_entry = ttk.Entry(
+            self.canvas,
+            bootstyle="dark",
+        )
+        self.section_name_entry.place(
+            x=300,
+            y=30,
+            width=252,
+            height=32
+        )
+        self.reading_time_label = self.canvas.create_text(
+            70,
+            72,
+            anchor="nw",
+            text="Reading Time:",
+            fill="#121212",
+            font=HEADING[3]
+        )
+        self.reading_time_entry = ttk.Entry(
+            self.canvas,
+            bootstyle="dark",
+        )
+        self.reading_time_entry.place(
+            x=300,
+            y=72,
+            width=37,
+            height=35
+        )
+        self.canvas.create_text(
+            350,
+            72,
+            anchor="nw",
+            text="m",
+            fill="#121212",
+            font=HEADING[3]
+        )
+        self.duration_label = self.canvas.create_text(
+            70,
+            114,
+            anchor="nw",
+            text="Duration:",
+            fill="#121212",
+            font=HEADING[3]
+        )
+        self.hour_entry = ttk.Entry(
+            self.canvas,
+            bootstyle="dark",
+        )
+        self.hour_entry.place(
+            x=200,
+            y=114,
+            width=30,
+            height=35
+        )
+        self.canvas.create_text(
+            250,
+            114,
+            anchor="nw",
+            text="h",
+            fill="#121212",
+            font=HEADING[3]
+        )
+        self.minute_entry = ttk.Entry(
+            self.canvas,
+            bootstyle="dark",
+        )
+        self.minute_entry.place(
+            x=300,
+            y=114,
+            width=37,
+            height=35
+        )
+        self.canvas.create_text(
+            350,
+            114,
+            anchor="nw",
+            text="m",
+            fill="#121212",
+            font=HEADING[3]
+        )
 
 # add/remove section modification buttons
-class EditorSectionModify(EditorSectionList):
-    def __init__(self, parent):
-        self.add_button = Button(
+class EditorSectionModify:
+    def __init__(self, parent, controller):
+        self.controller = controller
+        
+        # place at the very top if there are no sections yet
+        if self.controller.section_count == 0:
+            self.x = 522
+            self.y = 100
+        # otherise place at the end of the last section
+        else:
+            self.x = 522
+            self.y = 285+(188 * (self.controller.section_count - 1))
+        
+        self.add_button = ttk.Button(
             parent,
             text="Add",
-            borderwidth=0,
-            highlightthickness=0,
-            command=lambda: print("Add section clicked"),
-            relief="flat"
+            command=lambda: self.controller.add_section(),
+            bootstyle="light"
         )
-        self.remove_button = Button(
+        self.add_button.place(x=self.x, y=self.y, width=100, height=47)
+        
+        self.remove_button = ttk.Button(
             parent,
             text="Remove",
-            borderwidth=0,
-            highlightthickness=0,
-            command=lambda: print("Remove section clicked"),
-            relief="flat"
+            command=lambda: self.controller.remove_section(),
+            bootstyle="danger",
+            state=("disabled" if controller.section_count == 0 else "active")
         )
-
-    # call place(self, index) to place the buttons below the last section
-    def place(self, index):
-        self.add_button.place(x=522.0, y=(277.0+(170*index)), width=100.0, height=47.0)
-        self.remove_button.place(x=630, y=277.0+(170.0*index), width=100.0, height=47.0)
+        self.remove_button.place(x=self.x+110, y=self.y, width=100, height=47)
+        
+        self.save_button = ttk.Button(
+            parent,
+            text="Save",
+            command=lambda: self.controller.apply(),
+            bootstyle="success",
+            state="disabled"
+        )
+        self.save_button.place(x=self.x+220, y=self.y, width=100, height=47)
+    
+    def destroy(self):
+        self.add_button.destroy()
+        self.remove_button.destroy()
+        self.save_button.destroy()
         
 # section_buttons = EditorSectionModify(editor_canvas)
 # section_buttons.place(0)
 
-# section object
-class EditorSection(EditorSectionList):
-    def __init__(self, parent, section_number):
-        self.x = 522.0
-        self.y = 96.0
-        self.section_bg = parent.create_rectangle(
-            self.x,
-            self.y,
-            self.x + 600,
-            self.y + 170,
-            fill="#F5F5F5",
-            outline=""
-        )
-        self.section_number = parent.create_text(
-            self.x + 20,
-            self.y + 20,
-            anchor="nw",
-            text=str(section_number),
-            fill="#121212",
-            font=("RobotoRoman Bold", 32 * -1)
-        )
-        self.separator_line = parent.create_rectangle(
-            self.x + 47,
-            self.y + 30,
-            self.x + 52,
-            self.y + 150,
-            fill="#EEEEEE",
-            outline=""
-        )
-        self.section_name_label = parent.create_text(
-            self.x + 70,
-            self.y + 30,
-            anchor="nw",
-            text="Section Name:",
-            fill="#121212",
-            font=("RobotoRoman Bold", 32 * -1)
-        )
-        self.section_name_entry = Entry(
-            parent,
-            bd=0,
-            bg="#EEEEEE",
-            fg="#000716",
-            highlightthickness=0
-        )
-        self.section_name_entry.place(
-            x=self.x + 300,
-            y=self.y + 30,
-            width=252,
-            height=32
-        )
-        self.reading_time_label = parent.create_text(
-            self.x + 70,
-            self.y + 72,
-            anchor="nw",
-            text="Reading Time:",
-            fill="#121212",
-            font=("RobotoRoman Regular", 32 * -1)
-        )
-        self.reading_time_entry = Entry(
-            parent,
-            bd=0,
-            bg="#EEEEEE",
-            fg="#000716",
-            highlightthickness=0
-        )
-        self.reading_time_entry.place(
-            x=self.x + 300,
-            y=self.y + 72,
-            width=37,
-            height=35
-        )
-        self.duration_label = parent.create_text(
-            self.x + 70,
-            self.y + 114,
-            anchor="nw",
-            text="Duration:",
-            fill="#121212",
-            font=("RobotoRoman Regular", 32 * -1)
-        )
-        self.hour_entry = Entry(
-            parent,
-            bd=0,
-            bg="#EEEEEE",
-            fg="#000716",
-            highlightthickness=0
-        )
-        self.hour_entry.place(
-            x=self.x + 200,
-            y=self.y + 114,
-            width=30,
-            height=35
-        )
-        self.minute_entry = Entry(
-            parent,
-            bd=0,
-            bg="#EEEEEE",
-            fg="#000716",
-            highlightthickness=0
-        )
-        self.minute_entry.place(
-            x=self.x + 300,
-            y=self.y + 114,
-            width=37,
-            height=35
-        )
-        
-# section = EditorSection(editor_canvas, 1)
-
-# new subject
 class EditorNewSubject:
     def __init__(self, parent, callback):
+        self.parent = parent
+        
         # init values for empty form
         self.subject_name = ""
         self.level = -1
@@ -157,35 +243,38 @@ class EditorNewSubject:
         self.x = 41.0
         self.y = 97.0
         
-        self.new_subject_bg = parent.create_rectangle(
+        self.new_subject_bg = round_rectangle(
+            self.parent,
             self.x,
             self.y,
             self.x + 439,
             self.y + 217,
+            radius=20,
             fill="#F5F5F5",
             outline=""
         )
-        self.add_subject_label = parent.create_text(
+        self.add_subject_label = self.parent.create_text(
             self.x,
             self.y - 49,
             anchor="nw",
             text="Add a new subject to the list:",
             fill="#000000",
-            font=("RobotoRoman Bold", 32 * -1)
+            font=HEADING[1]
         )
-        self.subject_name_label = parent.create_text(
-            self.x + 25,
-            self.y + 20,
+        self.subject_name_label = self.parent.create_text(
+            self.x + 30,
+            self.y + 25,
             anchor="nw",
             text="Subject Name",
             fill="#121212",
-            font=("RobotoRoman Bold", 32 * -1)
+            font=HEADING[2]
         )
         self.subject_name_entry = Entry(
-            parent,
+            self.parent,
             bd=0,
             bg="#EEEEEE",
             fg="#000716",
+            font=HEADING[3],
             highlightthickness=0
         )
         self.subject_name_entry.place(
@@ -194,23 +283,19 @@ class EditorNewSubject:
             width=376,
             height=51
         )
-        self.level_label = parent.create_text(
+        self.level_label = self.parent.create_text(
             self.x + 30,
-            self.y + 116,
+            self.y + 125,
             anchor="nw",
             text="Level: Not Selected",
             fill="#121212",
-            font=("RobotoRoman Bold", 32 * -1)
+            font=HEADING[2]
         )
-        self.hl_button = Button(
-            parent,
+        self.hl_button = ttk.Button(
+            self.parent,
             text="HL",
-            fg="#FFFFFF",
-            bg="#61CA6C",
-            borderwidth=0,
-            highlightthickness=0,
-            command=lambda: self.set_level(parent, 1),
-            relief="flat"
+            bootstyle="success",
+            command=lambda: self.set_level(1),
         )
         self.hl_button.place(
             x=self.x + 78,
@@ -218,15 +303,11 @@ class EditorNewSubject:
             width=41,
             height=26
         )
-        self.sl_button = Button(
-            parent,
+        self.sl_button = ttk.Button(
+            self.parent,
             text="SL",
-            fg="#FFFFFF",
-            bg="#4184EC",
-            borderwidth=0,
-            highlightthickness=0,
-            command=lambda: self.set_level(parent, 0),
-            relief="flat"
+            bootstyle="info",
+            command=lambda: self.set_level(0),
         )
         self.sl_button.place(
             x=self.x + 31,
@@ -234,13 +315,11 @@ class EditorNewSubject:
             width=41,
             height=26
         )
-        self.add_subject_button = Button(
-            parent,
+        self.add_subject_button = ttk.Button(
+            self.parent,
             text="Add",
-            borderwidth=0,
-            highlightthickness=0,
-            command=lambda: self.register_subject(parent),
-            relief="flat"
+            bootstyle="dark",
+            command=lambda: self.register_subject(),
         )
         self.add_subject_button.place(
             x=self.x + 300,
@@ -248,22 +327,28 @@ class EditorNewSubject:
             width=100,
             height=47
         )
-    def set_level(self, parent, level):
+    def set_level(self, level):
         self.level = level
         
         label_text = "Level: " + ("SL" if level == 0 else "HL")
-        parent.itemconfig(self.level_label, text=label_text)
+        self.parent.itemconfig(self.level_label, text=label_text)
     
-    def register_subject(self, parent):
+    def register_subject(self):
         self.subject_name = self.subject_name_entry.get()
         
         if self.subject_name.strip() == "" or self.level == -1:
-            parent.itemconfig(self.add_subject_label, text="Invalid details!")
+            self.status_msg("Please fill in all fields")
             return      
          
-        self.callback(self.subject_name, self.level)
-
-
+        self.reset_msg()
+        self.callback(self.subject_name.strip(), self.level)
+    
+    def status_msg(self, message):
+        self.parent.itemconfig(self.add_subject_label, fill="#FF0000", text=message)
+    
+    def reset_msg(self):
+        self.parent.itemconfig(self.add_subject_label, fill="#000000", text="Add a new subject to the list:")
+             
 class EditorSubjectList:
     def __init__(self, parent, callback):
         self.callback = callback
@@ -277,72 +362,38 @@ class EditorSubjectList:
             anchor="nw",
             text="Choose subject to configure:",
             fill="#000000",
-            font=HEADING[2]
+            font=HEADING[1]
         )
         self.subject_list = Listbox(
             parent,
             bd=0,
             bg="#F5F5F5",
             fg="#000716",
+            font=HEADING[4],
             highlightthickness=0,
             selectmode=SINGLE,
-            
         )
         self.subject_list.place(
             x=self.x + 40,
             y=self.y + 385,
             width=440,
-            height=325
+            height=285
         )
         
         self.subject_list.bind("<<ListboxSelect>>", self.handle_selection)
-    
+
     def update_list(self, subjects):
+        self.subject_list.delete(0, END)
+        
         for subject in subjects:
-            self.subject_list.insert(END, subject.name)
+            display_name = subject.name + (" HL" if subject.level == 1 else " SL")
+            self.subject_list.insert(END, display_name)
 
     def handle_selection(self, event):
         selected_index = self.subject_list.curselection()
         self.callback(selected_index)
 
+# i dont think we need this
 
-# existing_subject_list = EditorSubjectList(editor_canvas)
-
-class EditorApplyButtons:
-    def __init__(self, parent):
-        self.x = 0
-        self.y = 0
-        
-        # IMAGE_CONFIRM = PhotoImage(file=relative_to_assets("button_6.png"))
-        # IMAGE_CANCEL = PhotoImage(file=relative_to_assets("button_7.png"))
-        
-        self.confirm_button = Button(
-            parent,
-            text="Confirm",
-            borderwidth=0,
-            highlightthickness=0,
-            command=lambda: print("button_6 clicked"),
-            relief="flat"
-        )
-        self.confirm_button.place(
-            x=1319,
-            y=25,
-            width=172,
-            height=46
-        )
-        self.cancel_button = Button(
-            parent,
-            text="Cancel",
-            borderwidth=0,
-            highlightthickness=0,
-            command=lambda: print("button_7 clicked"),
-            relief="flat"
-        )
-        self.cancel_button.place(
-            x=1151,
-            y=25,
-            width=163.75146484375,
-            height=46
-        )
 
 # confirm_cancel = ConfirmCancel(window, 0, 0)

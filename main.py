@@ -4,29 +4,32 @@ import ttkbootstrap as ttk
 from ttkbootstrap.constants import *
 
 from style import HEADING
-from editor import EditorNewSubject, EditorSubjectList
+from editor import EditorNewSubject, EditorSubjectList, EditorSectionList
+
+# https://www.digitalocean.com/community/tutorials/tkinter-working-with-classes
+# https://ttkbootstrap.readthedocs.io/en/latest/themes/themecreator/
 
 # represents an IB subject which may contain multiple papers.
 class Subject():
     def __init__(self, name, level) -> None:
         self.name = name
         self.level = level # 0 for SL, 1 for HL
-        self.exams = []
+        self.sections = []
     
     def add_exam(self, exam):
-        self.exams.append(exam)
+        self.sections.append(exam)
 
 # represents a single paper, e.g. Paper 1 of a subject.
-class Exam(Subject):
-    def __init__(self, subject, name, hours, minutes) -> None:
-        super().__init__(subject)
+class Section(Subject):
+    def __init__(self, name, reading_time, hours, minutes) -> None:
         self.name = name
+        self.reading_time = timedelta(minutes=reading_time)
         self.duration = timedelta(hours=hours, minutes=minutes)
 
 class App(tk.Tk):
     def __init__(self) -> None:
         # init subject list
-        self.subjects = []
+        self.subjects = [Subject("Test", 1)]
         
         # init tkinter ui
         self.root = ttk.Window(themename="robin")
@@ -110,35 +113,13 @@ class TimerPage(ttk.Frame):
     def __init__(self, parent, controller):
         ttk.Frame.__init__(self, parent)
 
-        # Create the grid headers
-        subject_label = ttk.Label(self, text="Subject")
-        subject_label.grid(row=0, column=0, padx=10, pady=10)
-
-        exam_label = ttk.Label(self, text="Exam")
-        exam_label.grid(row=0, column=1, padx=10, pady=10)
-
-        time_label = ttk.Label(self, text="Time Remaining")
-        time_label.grid(row=0, column=2, padx=10, pady=10)
-
-        # Populate the grid with exam details
-        for i, subject in enumerate(controller.subjects):
-            for j, exam in enumerate(subject.exams):
-                subject_name = ttk.Label(self, text=subject.name)
-                subject_name.grid(row=i+1, column=0, padx=10, pady=10)
-
-                exam_name = ttk.Label(self, text=exam.name)
-                exam_name.grid(row=i+1, column=1, padx=10, pady=10)
-
-                time_remaining = ttk.Label(self, text=self.get_time_remaining(exam.duration))
-                time_remaining.grid(row=i+1, column=2, padx=10, pady=10)
-
-    def get_time_remaining(self, duration):
-        remaining = duration - datetime.now().time()
-        return str(remaining)
-
 # editor window to add/configure exams
 class EditorPage(ttk.Frame):
+    # parent represents the Toplevel window containing the EditorPage
+    # controller represents the instance of the App class
     def __init__(self, parent, controller):
+        self.controller = controller
+        
         ttk.Frame.__init__(self, parent)
         self.pack(fill="both", expand=True)
         
@@ -147,23 +128,38 @@ class EditorPage(ttk.Frame):
         self.editor_canvas.pack(fill="both", expand=True)
         
         # draw subject addition/selection elements
-        new_subject = EditorNewSubject(self.editor_canvas, self.create_subject)
-        subject_list = EditorSubjectList(self.editor_canvas, self.configure_subject)
+        self.new_subject = EditorNewSubject(self.editor_canvas, self.create_subject)
+        self.subject_list = EditorSubjectList(self.editor_canvas, self.configure_subject)
+        self.subject_list.update_list(self.controller.subjects)
     
-    # callback for UI for registering a new subject
+    # called by EditorNewSubject to register a new subject
     def create_subject(self, subject_name, level):
+        if any((subject.name == subject_name and subject.level == level) for subject in self.controller.subjects):
+            self.new_subject.status_msg("Subject already exists!")
+            return
+        
         subject = Subject(subject_name, level)
-        app.subjects.append(subject)
+        self.controller.subjects.append(subject)
         
-        # TODO: update list of subjects
+        # redraw list of subjects
+        self.subject_list.update_list(self.controller.subjects)
         
-        # debug
-        app.list_subjects()
+    # called by EditorSubjectList component each time a subject is selected
+    def configure_subject(self, subject_index):
+        self.subject_index = subject_index
+        
+        # destroy any existing UI (if there was a previously selected subject for config)
+        # old EditorSectionList would become ready for garbage collection (safe)
+        if hasattr(self, 'section_config'):
+            self.section_config.destroy()
+        
+        # draws the UI (EditorSectionList component) to configure sections
+        self.section_config = EditorSectionList(self.editor_canvas, self.controller.subjects[subject_index[0]].sections, self.register_sections)
     
-    # callback for UI for selecting a subject to configure
-    def configure_subject(self, subject):
-        pass
-        
+    # called by EditorSectionList to register a section
+    def register_sections(self, name, reading_time, hours, minutes):
+        section = Section(str(name), int(reading_time), int(hours), int(minutes))
+        self.controller.subjects[self.subject_index].sections.append(section)
 
 # create an instance of the app
 app = App()
