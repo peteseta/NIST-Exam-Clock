@@ -2,7 +2,7 @@ import arrow
 
 import tkinter as tk
 import ttkbootstrap as ttk
-from ttkbootstrap.constants import *
+from ttkbootstrap.constants import *  # noqa: F403
 
 from style import HEADING
 from editor import EditorNewSubject, EditorSubjectList, EditorSectionList
