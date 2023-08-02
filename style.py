@@ -1,8 +1,10 @@
-# constants for font sizes - treat like H0, H1, etc. in markdown
-HEADING = ["system 200 bold", "system 32 bold", "system 24 bold", "system 24", "system 18"]
 # for colors, the custom ttkbootstrap theme named "robin" is packaged.
 
+# constants for font sizes - treat like H0, H1, etc. in markdown
+HEADING = ["system 200 bold", "system 32 bold", "system 24 bold", "system 24", "system 18"]
+
 # https://stackoverflow.com/questions/44099594/how-to-make-a-tkinter-canvas-rectangle-with-rounded-corners
+# definition for rounded rectangle for styling
 def round_rectangle(canvas, x1, y1, x2, y2, radius=25, **kwargs):
     points = [x1+radius, y1,
               x1+radius, y1,

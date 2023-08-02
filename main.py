@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+import arrow
 import tkinter as tk
 import ttkbootstrap as ttk
 from ttkbootstrap.constants import *
@@ -23,13 +24,17 @@ class Subject():
 class Section(Subject):
     def __init__(self, name, reading_time, hours, minutes) -> None:
         self.name = name
-        self.reading_time = timedelta(minutes=reading_time)
-        self.duration = timedelta(hours=hours, minutes=minutes)
+        self.reading_time = reading_time
+        self.hours = hours
+        self.minutes = minutes
 
 class App(tk.Tk):
     def __init__(self) -> None:
         # init subject list
         self.subjects = [Subject("Test", 1)]
+        
+        # debug
+        self.subjects[0].sections.append(Section("Test Section", 5, 1, 15))
         
         # init tkinter ui
         self.root = ttk.Window(themename="robin")
@@ -104,14 +109,25 @@ class ClockHeader(ttk.Frame):
         
     # continuously updates the clock
     def update_clock(self):
-        time = datetime.now().strftime("%H:%M:%S")
+        time = arrow.now().format("HH:mm:ss")
         self.clock_canvas.itemconfig(self.time, text=time)
         self.after(1000, self.update_clock)
+
 
 # timer window to be shown to candidates
 class TimerPage(ttk.Frame):
     def __init__(self, parent, controller):
+        self.controller = controller
+        
         ttk.Frame.__init__(self, parent)
+        self.pack(fill="both", expand=True)
+        
+        # canvas to hold timers
+        self.timer_canvas = ttk.Canvas(self)
+        self.timer_canvas.pack(fill="both", expand=True)
+        
+        
+        
 
 # editor window to add/configure exams
 class EditorPage(ttk.Frame):
@@ -129,8 +145,7 @@ class EditorPage(ttk.Frame):
         
         # draw subject addition/selection elements
         self.new_subject = EditorNewSubject(self.editor_canvas, self.create_subject)
-        self.subject_list = EditorSubjectList(self.editor_canvas, self.configure_subject)
-        self.subject_list.update_list(self.controller.subjects)
+        self.subject_list = EditorSubjectList(self.editor_canvas, self.configure_subject, self.controller.subjects)
     
     # called by EditorNewSubject to register a new subject
     def create_subject(self, subject_name, level):
@@ -146,7 +161,8 @@ class EditorPage(ttk.Frame):
         
     # called by EditorSubjectList component each time a subject is selected
     def configure_subject(self, subject_index):
-        self.subject_index = subject_index
+        self.subject_index = subject_index[0]
+        print(self.subject_index)
         
         # destroy any existing UI (if there was a previously selected subject for config)
         # old EditorSectionList would become ready for garbage collection (safe)
@@ -157,9 +173,14 @@ class EditorPage(ttk.Frame):
         self.section_config = EditorSectionList(self.editor_canvas, self.controller.subjects[subject_index[0]].sections, self.register_sections)
     
     # called by EditorSectionList to register a section
-    def register_sections(self, name, reading_time, hours, minutes):
-        section = Section(str(name), int(reading_time), int(hours), int(minutes))
-        self.controller.subjects[self.subject_index].sections.append(section)
+    def register_sections(self, name_list, reading_time_list, hours_list, minutes_list):
+        # clear existing sections
+        self.controller.subjects[self.subject_index].sections = []
+        
+        # populate sections list with Section objects
+        for name, reading_time, hours, minutes in zip(name_list, reading_time_list, hours_list, minutes_list):
+            section = Section(name, reading_time, hours, minutes)
+            self.controller.subjects[self.subject_index].sections.append(section)
 
 # create an instance of the app
 app = App()
