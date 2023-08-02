@@ -408,7 +408,8 @@ class EditorNewSubject:
             height=47
         )
     def set_level(self, level):
-        """Updates the label to give visual feedback on the selected level
+        """
+        Updates the label to give visual feedback on the selected level when a level button is clicked
 
         Args:
             level (int): 0 means SL, 1 means HL
@@ -420,6 +421,7 @@ class EditorNewSubject:
     
     def register_subject(self):
         """
+        Called when "add subject" is clicked. Calls the callback function to store the subject.
         The entries are validated before the callback is called (so garbage data isn't passed on).
         If anything is invalid a status message is displayed.
         """
