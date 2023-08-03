@@ -1,11 +1,13 @@
-import arrow
-
 import tkinter as tk
-import ttkbootstrap as ttk
-from ttkbootstrap.constants import *  # noqa: F403
+from collections import defaultdict
+from datetime import timedelta
 
-from style import HEADING
+import arrow
+import ttkbootstrap as ttk
+
 from editor import EditorNewSubject, EditorSubjectList, EditorSectionList
+from timer import Timer
+
 
 # from timer import *
 
@@ -34,7 +36,7 @@ class Section:
 
     def __init__(self, name, hours, minutes) -> None:
         """
-        Initilizes a new section.
+        Initializes a new section.
 
         Args:
             name (str): Section name.
@@ -45,32 +47,30 @@ class Section:
         self.hours = hours
         self.minutes = minutes
 
-        self.status = -1
+        self.section_in_progress = False
         self.section_run = False
-
-        self.start_time = None
-        self.end_time = None
-        self.thirty_min_warning = None
-        self.five_min_warning = None
-        
-    def calculate_exam_time(self, start_time):
-        self.start_time = start_time
-        self.end_time = start_time.shift(hours=self.hours, minutes=self.minutes)
-        self.thirty_min_warning = self.end_time.shift(minutes=-30)
-        self.five_min_warning = self.end_time.shift(minutes=-5)
 
 
 class App(tk.Tk):
     def __init__(self) -> None:
         """
-        Initializes the main app UI (showing the clock and timer page by defualt)
+        Initializes the main app UI (showing the clock and timer page by default)
         Initializes base data structures
         """
 
         # TODO: remove debug
-        # self.subjects = []
-        self.subjects = [Subject("Test", 1)]
-        self.subjects[0].sections.append(Section("Test Section", 1, 15))
+        self.subjects = [
+            Subject("2 min then 1 min", 1),
+            Subject("1 min x3", 1),
+        ]
+        self.active_subjects = []
+
+        # TODO: remove debug
+        self.subjects[0].sections.append(Section("Two Min Section", 0, 2))
+        self.subjects[0].sections.append(Section("One Min Section", 0, 1))
+        self.subjects[1].sections.append(Section("Test Section1", 0, 1))
+        self.subjects[1].sections.append(Section("Test Section2", 0, 1))
+        self.subjects[1].sections.append(Section("Test Section3", 0, 1))
 
         self.root = ttk.Window(themename="robin")
         self.root.title("NIST Exam Clock")
@@ -90,7 +90,7 @@ class App(tk.Tk):
         Handles creating a new popup window, e.g. for the editor
 
         Args:
-            frame_class (ttk.Frame): Object that defines the frame to be shown.
+            frame_class (EditorPage): Object that defines the frame to be shown.
             width (int, optional): Width of popup. Defaults to 1520.
             height (int, optional): height of popup. Defaults to 760.
         """
@@ -127,6 +127,23 @@ class ClockHeader(ttk.Frame):
         )
         self.update_clock()
 
+        self.start_button = ttk.Button(
+            self,
+            text="Start All Exams",
+            command=lambda: self.controller.timer_page.start_timers(),
+            bootstyle="secondary",
+        )
+        self.start_button.place(x=1670, y=20, width=120, height=35)
+
+        self.advance_button = ttk.Button(
+            self,
+            text="Start Next Section(s)",
+            command=lambda: self.controller.timer_page.advance_timers(),
+            bootstyle="secondary",
+            state="disabled",
+        )
+        self.advance_button.place(x=1510, y=20, width=150, height=35)
+
         self.show_editor_button = ttk.Button(
             self,
             text="Edit Exams",
@@ -156,8 +173,97 @@ class TimerPage(ttk.Frame):
         self.controller = controller
         ttk.Frame.__init__(self, parent, padding=20)
 
-        test_text = ttk.Label(self, text="Test", foreground="#121212", font=HEADING[1])
-        test_text.grid(row=0, column=0, sticky="nsew")
+        self.timers = []
+
+        self.group_timers()
+        self.draw_timers()
+
+    def group_timers(self):
+        """
+        Groups each subject's first section (that hasn't been run) by duration
+        Creates a timer for each duration
+        """
+        sections_by_duration = defaultdict(list)
+
+        for subject in self.controller.subjects:
+            for section in subject.sections:
+                if not section.section_run:
+                    section.section_in_progress = True
+                    duration = timedelta(hours=section.hours, minutes=section.minutes)
+                    sections_by_duration[duration].append(subject)
+                    self.controller.active_subjects.append(
+                        subject
+                    )  # add subject to active_subjects
+                    break
+
+        # remove active subjects from subjects
+        for subject in self.controller.active_subjects:
+            if subject in self.controller.subjects:
+                self.controller.subjects.remove(subject)
+
+        # add a timer for each duration
+        for duration in sorted(sections_by_duration.keys()):
+            # pass the subjects with the same duration
+            timer = Timer(self, self.finish, sections_by_duration[duration], duration)
+            self.timers.append(timer)
+
+    def draw_timers(self):
+        """
+        Draws the timers on the page
+        """
+        for index, timer in enumerate(self.timers):
+            timer.frame.grid(row=0, column=index, sticky="n")
+
+    def start_timers(self):
+        """
+        Starts all the inactive timers on the page
+        Disables the button to advance to the next section
+        """
+        for timer in self.timers:
+            if not timer.is_running:
+                timer.start_timer()
+
+        self.controller.header.advance_button.configure(state="disabled")
+
+    def finish(self, subjects):
+        """
+        Called by the Timer objects whenever a timer is finished.
+        Marks the sections as run and adds the subjects back to the subjects list
+        so that it is eligible for the next grouping run.
+        Enables the button to advance to the next section
+        """
+        # mark sections as run
+        for subject in subjects:
+            for section in subject.sections:
+                if section.section_in_progress:
+                    section.section_in_progress = False
+                    section.section_run = True
+                    self.controller.subjects.append(
+                        subject
+                    )  # add subject back to subjects
+                    if subject in self.controller.active_subjects:
+                        self.controller.active_subjects.remove(
+                            subject
+                        )  # remove subject from active_subjects
+
+        # activate button to start the next section
+        self.controller.header.advance_button.configure(state="normal")
+
+    def advance_timers(self):
+        """
+        Destroys the finished timers.
+        Regroups the remaining sections by duration and creates new timers.
+        """
+
+        # destroy finished timers
+        for timer in self.timers:
+            if timer.finished:
+                timer.frame.destroy()
+                self.timers.remove(timer)
+
+        # regroup and start new timers
+        self.group_timers()
+        self.draw_timers()
 
 
 class EditorPage(ttk.Frame):
@@ -214,7 +320,7 @@ class EditorPage(ttk.Frame):
         Draws the UI (EditorSectionList component) to configure sections
 
         Args:
-            subject_index (int): Index (0, 1, 2...) of the subject in the subject list
+            subject_index (tuple): Tuple with index (0, 1, 2...) of the subject in the subject list
         """
         self.subject_index = subject_index[0]
         print(self.subject_index)
@@ -246,9 +352,7 @@ class EditorPage(ttk.Frame):
         self.controller.subjects[self.subject_index].sections = []
 
         # populate sections list with Section objects
-        for name, hours, minutes in zip(
-            name_list, hours_list, minutes_list
-        ):
+        for name, hours, minutes in zip(name_list, hours_list, minutes_list):
             section = Section(name, hours, minutes)
             self.controller.subjects[self.subject_index].sections.append(section)
 
