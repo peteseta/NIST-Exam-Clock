@@ -32,7 +32,6 @@ class EditorSectionList:
                         self,
                         index + 1,
                         section.name,
-                        section.reading_time,
                         section.hours,
                         section.minutes,
                     )
@@ -73,10 +72,26 @@ class EditorSectionList:
 
     def validate_entries(self, *args):
         """
-        Checks if all the section details are properly filled out - each section must have a name and at least 1 minute duration, excluding reading time. If all entries are valid, the Save button in EdittorSectionModify is enabled.
+        Checks if all the section details are properly filled out
+        Each section must have a name and at least 1 minute duration 
+        If all entries are valid, the Save button in EdittorSectionModify is enabled.
+        If there are already 4 sections, the Add button is disabled.
 
-        Accepts *args due to trace_add() requiring a callback with a certain number of arguments
+        Accepts *args due to trace_add() requiring it for the callback.
         """
+        
+        # no more than 4 sections
+        if self.section_count >= 4:
+            self.modify.add_button.config(state="disabled")
+        else:
+            self.modify.add_button.config(state="active")
+            
+        # no less than 0 sections
+        if self.section_count == 0:
+            self.modify.remove_button.config(state="disabled")
+        else:
+            self.modify.remove_button.config(state="active")
+            
         for component in self.components:
             if (component.name_var.get() == "") or (
                 (component.hours_var.get() + component.minutes_var.get()) == 0
@@ -85,20 +100,17 @@ class EditorSectionList:
                 return
 
         # enable the Save button if all entries are filled
-        self.modify.save_button.config(state="active")
+        self.modify.save_button.config(state="active")   
 
     def apply(self):
         """
         Retrives the data from all the entries and passes them to the callback as parallel arrays
         """
         name_list = [component.name_var.get() for component in self.components]
-        reading_time_list = [
-            component.reading_time_var.get() for component in self.components
-        ]
         hours_list = [component.hours_var.get() for component in self.components]
         minutes_list = [component.minutes_var.get() for component in self.components]
 
-        self.callback(name_list, reading_time_list, hours_list, minutes_list)
+        self.callback(name_list, hours_list, minutes_list)
 
     def destroy(self):
         """
@@ -120,7 +132,6 @@ class EditorSection:
         controller,
         section_number,
         name="",
-        reading_time=0,
         hours=0,
         minutes=0,
     ) -> None:
@@ -132,17 +143,15 @@ class EditorSection:
             controller (EditorSectionList object): Parent object "overseeing" the list of EditorSection's
             section_number (int): Index (1, 2, 3...) of current section to be displayed as the section number
             name (str, optional): Name of section (if existing). Defaults to "".
-            reading_time (int, optional): Reading time for section (if existing). Defaults to 0.
             hours (int, optional): Hour duration of section (if existing). Defaults to 0.
             minutes (int, optional): Minute duration of section (if existing). Defaults to 0.
         """
         self.controller = controller
-        self.canvas = Canvas(parent, width=600, height=170)
-        self.canvas.place(x=522.0, y=(96.0 + (188 * (section_number - 1))))
+        self.canvas = Canvas(parent, width=600, height=120)
+        self.canvas.place(x=522.0, y=(96.0 + (138 * (section_number - 1))))
 
         # values will be populated if section already exists
         self.name_var = StringVar(self.canvas, value=name)
-        self.reading_time_var = IntVar(self.canvas, value=reading_time)
         self.hours_var = IntVar(self.canvas, value=hours)
         self.minutes_var = IntVar(self.canvas, value=minutes)
 
@@ -152,7 +161,7 @@ class EditorSection:
         self.minutes_var.trace_add("write", self.controller.validate_entries)
 
         self.section_bg = round_rectangle(
-            self.canvas, 0, 0, 600, 170, radius=12, fill="#F5F5F5", outline=""
+            self.canvas, 0, 0, 600, 120, radius=12, fill="#F5F5F5", outline=""
         )
         self.section_number = self.canvas.create_text(
             20,
@@ -162,42 +171,32 @@ class EditorSection:
             fill="#121212",
             font=HEADING[2],
         )
-        self.separator_line = self.canvas.create_rectangle(
-            47, 30, 52, 150, fill="#EEEEEE", outline=""
+        self.separator_line = round_rectangle(
+            self.canvas, 45, 30, 50, 100, radius=5, fill="#EEEEEE", outline=""
         )
         self.section_name_label = self.canvas.create_text(
-            70, 30, anchor="nw", text="Section Name:", fill="#121212", font=HEADING[3]
+            70, 25, anchor="nw", text="Section Name:", fill="#121212", font=HEADING[3]
         )
         self.section_name_entry = ttk.Entry(
             self.canvas, bootstyle="dark", textvariable=self.name_var
         )
-        self.section_name_entry.place(x=300, y=30, width=252, height=32)
-        self.reading_time_label = self.canvas.create_text(
-            70, 72, anchor="nw", text="Reading Time:", fill="#121212", font=HEADING[3]
-        )
-        self.reading_time_entry = ttk.Entry(
-            self.canvas, bootstyle="dark", textvariable=self.reading_time_var
-        )
-        self.reading_time_entry.place(x=300, y=72, width=37, height=35)
-        self.canvas.create_text(
-            350, 72, anchor="nw", text="m", fill="#121212", font=HEADING[3]
-        )
+        self.section_name_entry.place(x=250, y=25, width=252, height=32)
         self.duration_label = self.canvas.create_text(
-            70, 114, anchor="nw", text="Duration:", fill="#121212", font=HEADING[3]
+            70, 70, anchor="nw", text="Duration:", fill="#121212", font=HEADING[3]
         )
         self.hour_entry = ttk.Entry(
             self.canvas, bootstyle="dark", textvariable=self.hours_var
         )
-        self.hour_entry.place(x=200, y=114, width=30, height=35)
+        self.hour_entry.place(x=200, y=70, width=30, height=35)
         self.canvas.create_text(
-            250, 114, anchor="nw", text="h", fill="#121212", font=HEADING[3]
+            250, 70, anchor="nw", text="h", fill="#121212", font=HEADING[3]
         )
         self.minute_entry = ttk.Entry(
             self.canvas, bootstyle="dark", textvariable=self.minutes_var
         )
-        self.minute_entry.place(x=300, y=114, width=37, height=35)
+        self.minute_entry.place(x=300, y=70, width=37, height=35)
         self.canvas.create_text(
-            350, 114, anchor="nw", text="m", fill="#121212", font=HEADING[3]
+            350, 70, anchor="nw", text="m", fill="#121212", font=HEADING[3]
         )
 
 
@@ -224,14 +223,12 @@ class EditorSectionModify:
             text="Remove",
             command=lambda: self.controller.remove_section(),
             bootstyle="danger",
-            state=("disabled" if controller.section_count == 0 else "active"),
         )
         self.save_button = ttk.Button(
             parent,
             text="Save",
             command=lambda: self.controller.apply(),
             bootstyle="success",
-            state="disabled",
         )
 
         self.place()
@@ -249,7 +246,7 @@ class EditorSectionModify:
         # otherise place at the end of the last section
         else:
             self.x = 522
-            self.y = 285 + (188 * (self.controller.section_count - 1))
+            self.y = 235 + (138 * (self.controller.section_count - 1))
 
         self.add_button.place(x=self.x, y=self.y, width=100, height=47)
         self.remove_button.place(x=self.x + 110, y=self.y, width=100, height=47)

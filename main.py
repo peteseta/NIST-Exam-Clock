@@ -32,33 +32,45 @@ class Section:
     Represents a single section (paper) of a subject, e.g. Paper 1 of a subject.
     """
 
-    def __init__(self, name, reading_time, hours, minutes) -> None:
+    def __init__(self, name, hours, minutes) -> None:
         """
         Initilizes a new section.
 
         Args:
             name (str): Section name.
-            reading_time (int): Reading time in minutes.
             hours (int): Hour component of the duration of the section.
             minutes (int): Minute component of the duration of the section.
         """
         self.name = name
-        self.reading_time = reading_time
         self.hours = hours
         self.minutes = minutes
+
+        self.status = -1
+        self.section_run = False
+
+        self.start_time = None
+        self.end_time = None
+        self.thirty_min_warning = None
+        self.five_min_warning = None
+        
+    def calculate_exam_time(self, start_time):
+        self.start_time = start_time
+        self.end_time = start_time.shift(hours=self.hours, minutes=self.minutes)
+        self.thirty_min_warning = self.end_time.shift(minutes=-30)
+        self.five_min_warning = self.end_time.shift(minutes=-5)
 
 
 class App(tk.Tk):
     def __init__(self) -> None:
         """
-        Initializes the main app window (showing the clock and timer page by defualt)
+        Initializes the main app UI (showing the clock and timer page by defualt)
         Initializes base data structures
         """
 
         # TODO: remove debug
         # self.subjects = []
         self.subjects = [Subject("Test", 1)]
-        self.subjects[0].sections.append(Section("Test Section", 5, 1, 15))
+        self.subjects[0].sections.append(Section("Test Section", 1, 15))
 
         self.root = ttk.Window(themename="robin")
         self.root.title("NIST Exam Clock")
@@ -220,14 +232,13 @@ class EditorPage(ttk.Frame):
         )
 
     # called by EditorSectionList to register a section
-    def register_sections(self, name_list, reading_time_list, hours_list, minutes_list):
+    def register_sections(self, name_list, hours_list, minutes_list):
         """
         Called by editor.EditorSectionList to modify a subject's sections
         Unpacks the section details and stores them in the subject's sections list
 
         Args:
             name_list (list): Parallel list of names of the sections
-            reading_time_list (list): Parallel list of reading times of the sections
             hours_list (list): List of hour components of the sections
             minutes_list (list): List of minute components of the sections
         """
@@ -235,10 +246,10 @@ class EditorPage(ttk.Frame):
         self.controller.subjects[self.subject_index].sections = []
 
         # populate sections list with Section objects
-        for name, reading_time, hours, minutes in zip(
-            name_list, reading_time_list, hours_list, minutes_list
+        for name, hours, minutes in zip(
+            name_list, hours_list, minutes_list
         ):
-            section = Section(name, reading_time, hours, minutes)
+            section = Section(name, hours, minutes)
             self.controller.subjects[self.subject_index].sections.append(section)
 
 
