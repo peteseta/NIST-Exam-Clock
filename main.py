@@ -9,8 +9,6 @@ from editor import EditorNewSubject, EditorSubjectList, EditorSectionList
 from timer import Timer
 
 
-# from timer import *
-
 # https://www.digitalocean.com/community/tutorials/tkinter-working-with-classes
 # https://ttkbootstrap.readthedocs.io/en/latest/themes/themecreator/
 
