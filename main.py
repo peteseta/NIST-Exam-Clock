@@ -82,7 +82,7 @@ class App(tk.Tk):
         self.root.title("NIST Exam Clock")
         self.root.geometry("1920x1080")
 
-        container = ttk.Frame(self.root, height=900, width=1600, bootstyle="info")
+        container = ttk.Frame(self.root, height=900, width=1600)
         container.pack(side="top", fill="both", expand=True)
         container.grid_rowconfigure(1, weight=1)
 
@@ -179,7 +179,7 @@ class TimerPage(ttk.Frame):
             controller (App): Master instance of the app to access subject/section data
         """
         self.controller = controller
-        ttk.Frame.__init__(self, parent, padding=20, bootstyle="success")
+        ttk.Frame.__init__(self, parent, padding=20)
         self.grid_rowconfigure(0, weight=1)
 
         self.timers = []

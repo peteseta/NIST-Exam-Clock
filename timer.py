@@ -11,7 +11,7 @@ class Timer:
     def __init__(
         self, parent, callback, subjects_with_duration, duration, section_id
     ) -> None:
-        self.frame = ttk.Frame(parent, padding=10, bootstyle="dark")
+        self.frame = ttk.Frame(parent, padding=10)
         self.frame.grid_rowconfigure(2, weight=1)
 
         self.callback = callback
@@ -121,7 +121,7 @@ class ProgressBar:
 
 class SubjectList:
     def __init__(self, parent, subjects) -> None:
-        self.frame = ttk.Frame(parent, bootstyle="info")
+        self.frame = ttk.Frame(parent)
         self.frame.grid(row=1, sticky="nw")
 
         self.labels = []
@@ -160,7 +160,7 @@ class Info:
     def __init__(
         self, parent, duration, start_time, end_time, thirty_min, five_min
     ) -> None:
-        self.frame = ttk.Frame(parent, width=440, bootstyle="warning")
+        self.frame = ttk.Frame(parent, width=440)
         self.frame.grid(row=2, sticky="sw")
         self.frame.grid_rowconfigure(2, weight=1)
 
