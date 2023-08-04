@@ -50,6 +50,7 @@ class Section:
         self.section_in_progress = False
         self.section_run = False
 
+        # TODO: use unique id to allow changing details after starting timer
         self.id = Section.id_counter
         Section.id_counter += 1
 
@@ -64,14 +65,16 @@ class App(tk.Tk):
         # TODO: remove debug
         self.subjects = [
             Subject("2 min then 1 min", 1),
-            Subject("1 min x3", 1),
+            Subject("kshdfuhfukehfksuehfkusehfkusehfkusehfkusefhksef", 1),
         ]
         self.active_subjects = []
 
         # TODO: remove debug
         self.subjects[0].sections.append(Section("Two Min Section", 0, 2))
         self.subjects[0].sections.append(Section("One Min Section", 0, 1))
-        self.subjects[1].sections.append(Section("Test Section1", 0, 1))
+        self.subjects[1].sections.append(
+            Section("skeuhfksuehfkusehfksuefhksuefhkusehfskuefh", 0, 1)
+        )
         self.subjects[1].sections.append(Section("Test Section2", 0, 1))
         self.subjects[1].sections.append(Section("Test Section3", 0, 1))
 
@@ -79,8 +82,9 @@ class App(tk.Tk):
         self.root.title("NIST Exam Clock")
         self.root.geometry("1920x1080")
 
-        container = ttk.Frame(self.root, height=900, width=1600)
+        container = ttk.Frame(self.root, height=900, width=1600, bootstyle="info")
         container.pack(side="top", fill="both", expand=True)
+        container.grid_rowconfigure(1, weight=1)
 
         self.timer_page = TimerPage(container, self)
         self.timer_page.grid(row=1, column=0, sticky="nsew", padx=0, pady=0)
@@ -102,7 +106,8 @@ class App(tk.Tk):
         frame_class(popup, self)
 
 
-# permanent header for clock regardless of main window state
+# TODO: add stop exams button
+# TODO: add custom start (choose subjects to start)
 class ClockHeader(ttk.Frame):
     def __init__(self, parent, controller):
         """
@@ -174,7 +179,8 @@ class TimerPage(ttk.Frame):
             controller (App): Master instance of the app to access subject/section data
         """
         self.controller = controller
-        ttk.Frame.__init__(self, parent, padding=20)
+        ttk.Frame.__init__(self, parent, padding=20, bootstyle="success")
+        self.grid_rowconfigure(0, weight=1)
 
         self.timers = []
 
@@ -217,8 +223,7 @@ class TimerPage(ttk.Frame):
         Draws the timers on the page
         """
         for index, timer in enumerate(self.timers):
-            timer.frame.grid(row=0, column=index, sticky="s")
-            timer.frame.rowconfigure(2, weight=1)
+            timer.frame.grid(row=0, column=index, sticky="nsew")
 
     def start_timers(self):
         """

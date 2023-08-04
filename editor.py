@@ -432,6 +432,8 @@ class EditorSubjectList:
         self.active_subject_list = active_subject_list
         self.update_list()
 
+        # TODO: add remove subject button
+
     def update_list(self):
         """
         Called upon to populate the list as well as by the callback function when a new subject is added
