@@ -8,11 +8,15 @@ from style import HEADING
 
 
 class Timer:
-    def __init__(self, parent, callback, subjects_with_duration, duration) -> None:
+    def __init__(
+        self, parent, callback, subjects_with_duration, duration, section_id
+    ) -> None:
         self.frame = ttk.Frame(parent, padding=10)
         self.callback = callback
         self.duration = duration
+
         self.subjects = subjects_with_duration
+        self.section_id = section_id
 
         self.progress_bar = ProgressBar(self.frame)
         self.subject_list = SubjectList(self.frame, subjects_with_duration)
@@ -26,8 +30,24 @@ class Timer:
     def start_timer(self):
         self.start_time = datetime.datetime.now()
         self.end_time = self.start_time + self.duration
-        self.thirty_min = self.end_time - datetime.timedelta(minutes=30)
-        self.five_min = self.end_time - datetime.timedelta(minutes=5)
+        if self.duration > datetime.timedelta(minutes=30):
+            self.thirty_min = self.end_time - datetime.timedelta(minutes=30)
+        else:
+            self.thirty_min = None
+
+        if self.duration > datetime.timedelta(minutes=5):
+            self.five_min = self.end_time - datetime.timedelta(minutes=5)
+        else:
+            self.five_min = None
+
+        self.info = Info(
+            self.frame,
+            self.duration,
+            self.start_time,
+            self.end_time,
+            self.thirty_min,
+            self.five_min,
+        )
 
         self.is_running = True
         self.update_loop()
@@ -104,7 +124,7 @@ class ProgressBar:
 class SubjectList:
     def __init__(self, parent, subjects) -> None:
         self.frame = ttk.Frame(parent)
-        self.frame.grid(row=1, sticky="w")
+        self.frame.grid(row=1, sticky="nw")
 
         self.labels = []
 
@@ -112,14 +132,14 @@ class SubjectList:
             self.labels.append(
                 SubjectLabel(self.frame, subject.name, subject.sections[0].name)
             )
-            self.labels[index].canvas.grid(row=index, sticky="w")
+            self.labels[index].frame.grid(row=index, sticky="w")
 
 
 class SubjectLabel:
     def __init__(self, parent, subject_name, section_name) -> None:
-        self.canvas = ttk.Frame(parent, width=440)
+        self.frame = ttk.Frame(parent, width=440)
         ttk.Label(
-            self.canvas,
+            self.frame,
             text=subject_name,
             wraplength=440,
             justify="left",
@@ -128,7 +148,7 @@ class SubjectLabel:
             font=HEADING[1],
         ).grid(row=0, column=0, sticky="w")
         ttk.Label(
-            self.canvas,
+            self.frame,
             text=section_name,
             wraplength=440,
             justify="left",
@@ -136,3 +156,40 @@ class SubjectLabel:
             foreground="#838383",
             font=HEADING[2],
         ).grid(row=1, column=0, sticky="w")
+
+
+class Info:
+    def __init__(
+        self, parent, duration, start_time, end_time, thirty_min, five_min
+    ) -> None:
+        self.frame = ttk.Frame(parent, width=440)
+        self.frame.grid(row=2, sticky="sw")
+        self.frame.grid_rowconfigure(2, weight=1)
+
+        self.duration = (datetime.datetime(1, 1, 1) + duration).strftime("%Hh %Mm")
+        self.start_time = start_time.strftime("%H:%M")
+        self.end_time = end_time.strftime("%H:%M")
+        self.thirty_min = thirty_min.strftime("%H:%M") if thirty_min else None
+        self.five_min = five_min.strftime("%H:%M") if five_min else None
+
+        if self.thirty_min and self.five_min:
+            label_text = f"30m: {self.thirty_min} | 5min: {self.five_min}"
+        elif self.thirty_min:
+            label_text = f"30m: {self.thirty_min}"
+        elif self.five_min:
+            label_text = f"5min: {self.five_min}"
+        else:
+            label_text = ""
+
+        ttk.Label(
+            self.frame,
+            text=f"{self.duration} ({self.start_time} → {self.end_time})",
+            font=HEADING[4],
+            foreground="#838383",
+        ).grid(row=0, column=0, sticky="sw")
+        ttk.Label(
+            self.frame,
+            text=label_text,
+            font=HEADING[4],
+            foreground="#838383",
+        ).grid(row=1, column=0, sticky="sw")

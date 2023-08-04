@@ -32,6 +32,8 @@ class Section:
     Represents a single section (paper) of a subject, e.g. Paper 1 of a subject.
     """
 
+    id_counter = 0
+
     def __init__(self, name, hours, minutes) -> None:
         """
         Initializes a new section.
@@ -47,6 +49,9 @@ class Section:
 
         self.section_in_progress = False
         self.section_run = False
+
+        self.id = Section.id_counter
+        Section.id_counter += 1
 
 
 class App(tk.Tk):
@@ -202,7 +207,9 @@ class TimerPage(ttk.Frame):
         # add a timer for each duration
         for duration in sorted(sections_by_duration.keys()):
             # pass the subjects with the same duration
-            timer = Timer(self, self.finish, sections_by_duration[duration], duration)
+            timer = Timer(
+                self, self.finish, sections_by_duration[duration], duration, 0
+            )
             self.timers.append(timer)
 
     def draw_timers(self):
@@ -210,7 +217,8 @@ class TimerPage(ttk.Frame):
         Draws the timers on the page
         """
         for index, timer in enumerate(self.timers):
-            timer.frame.grid(row=0, column=index, sticky="n")
+            timer.frame.grid(row=0, column=index, sticky="s")
+            timer.frame.rowconfigure(2, weight=1)
 
     def start_timers(self):
         """
@@ -304,7 +312,7 @@ class EditorPage(ttk.Frame):
         # check if subject already exists
         if any(
             (subject.name == subject_name and subject.level == level)
-            for subject in self.controller.subjects
+            for subject in self.controller.subjects + self.controller.active_subjects
         ):
             self.new_subject.status_msg("Subject already exists!")
             return
@@ -313,7 +321,7 @@ class EditorPage(ttk.Frame):
         self.controller.subjects.append(subject)
 
         # redraw list of subjects
-        self.listbox.update_list(self.controller.subjects)
+        self.listbox.update_list()
 
     def configure_subject(self, subject_list, subject_index):
         """
