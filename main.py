@@ -283,8 +283,11 @@ class EditorPage(ttk.Frame):
 
         # draw subject addition/selection elements
         self.new_subject = EditorNewSubject(self.editor_canvas, self.create_subject)
-        self.subject_list = EditorSubjectList(
-            self.editor_canvas, self.configure_subject, self.controller.subjects
+        self.listbox = EditorSubjectList(
+            self.editor_canvas,
+            self.configure_subject,
+            self.controller.subjects,
+            self.controller.active_subjects,
         )
 
     def create_subject(self, subject_name, level):
@@ -310,18 +313,19 @@ class EditorPage(ttk.Frame):
         self.controller.subjects.append(subject)
 
         # redraw list of subjects
-        self.subject_list.update_list(self.controller.subjects)
+        self.listbox.update_list(self.controller.subjects)
 
-    def configure_subject(self, subject_index):
+    def configure_subject(self, subject_list, subject_index):
         """
         Called by editor.EditorSubjectList each time a subject is selected
         Draws the UI (EditorSectionList component) to configure sections
 
         Args:
+            subject_list (list): Either self.controller.subjects or self.controller.active_subjects
             subject_index (tuple): Tuple with index (0, 1, 2...) of the subject in the subject list
         """
-        self.subject_index = subject_index[0]
-        print(self.subject_index)
+        self.subject_list = subject_list
+        self.subject_index = subject_index
 
         # destroy any existing UI (if there was a previously selected subject)
         # old EditorSectionList would become ready for garbage collection (safe)
@@ -331,14 +335,14 @@ class EditorPage(ttk.Frame):
         # draws the UI (EditorSectionList component) to configure sections
         self.section_config = EditorSectionList(
             self.editor_canvas,
-            self.controller.subjects[subject_index[0]].sections,
+            self.subject_list[subject_index].sections,
             self.register_sections,
         )
 
     # called by EditorSectionList to register a section
     def register_sections(self, name_list, hours_list, minutes_list):
         """
-        Called by editor.EditorSectionList to modify a subject's sections
+        Called by the save button in editor.EditorSectionList to modify a subject's sections
         Unpacks the section details and stores them in the subject's sections list
 
         Args:
@@ -347,12 +351,16 @@ class EditorPage(ttk.Frame):
             minutes_list (list): List of minute components of the sections
         """
         # clear existing sections
-        self.controller.subjects[self.subject_index].sections = []
+        self.subject_list[self.subject_index].sections = []
 
         # populate sections list with Section objects
         for name, hours, minutes in zip(name_list, hours_list, minutes_list):
             section = Section(name, hours, minutes)
-            self.controller.subjects[self.subject_index].sections.append(section)
+            self.subject_list[self.subject_index].sections.append(section)
+
+        # regroup and redraw timers
+        self.controller.timer_page.group_timers()
+        self.controller.timer_page.draw_timers()
 
 
 # create an instance of the app

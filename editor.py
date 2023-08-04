@@ -1,5 +1,6 @@
 from tkinter import Canvas, Entry, Listbox, StringVar, IntVar
 from tkinter.constants import *
+
 import ttkbootstrap as ttk
 
 from style import HEADING, round_rectangle
@@ -73,25 +74,25 @@ class EditorSectionList:
     def validate_entries(self, *args):
         """
         Checks if all the section details are properly filled out
-        Each section must have a name and at least 1 minute duration 
+        Each section must have a name and at least 1 minute duration
         If all entries are valid, the Save button in EdittorSectionModify is enabled.
         If there are already 4 sections, the Add button is disabled.
 
         Accepts *args due to trace_add() requiring it for the callback.
         """
-        
+
         # no more than 4 sections
         if self.section_count >= 4:
             self.modify.add_button.config(state="disabled")
         else:
             self.modify.add_button.config(state="active")
-            
+
         # no less than 0 sections
         if self.section_count == 0:
             self.modify.remove_button.config(state="disabled")
         else:
             self.modify.remove_button.config(state="active")
-            
+
         for component in self.components:
             if (component.name_var.get() == "") or (
                 (component.hours_var.get() + component.minutes_var.get()) == 0
@@ -100,7 +101,7 @@ class EditorSectionList:
                 return
 
         # enable the Save button if all entries are filled
-        self.modify.save_button.config(state="active")   
+        self.modify.save_button.config(state="active")
 
     def apply(self):
         """
@@ -389,14 +390,15 @@ class EditorNewSubject:
 
 
 class EditorSubjectList:
-    def __init__(self, parent, callback, subject_list):
+    def __init__(self, parent, callback, subject_list, active_subject_list):
         """
         Initializes the UI component for selecting a subject to configure
 
         Args:
             parent (tkinter parent): A canvas housing all elements in EditorPage
-            callback (function): Callback for initializing the section editor UI. EditorPage.configure_subject() will init an instance of EditorSectionList to configure the sections of the selected subject.
-            subject_list (list): List of existing subjects for first population
+            callback (function): EditorPage.configure_subject() will init an instance of EditorSectionList to configure the sections of the selected subject.
+            subject_list (list): List of subjects without active timers
+            active_subject_list (list): List of subjects with active timers
         """
         self.callback = callback
 
@@ -411,7 +413,7 @@ class EditorSubjectList:
             fill="#000000",
             font=HEADING[1],
         )
-        self.subject_list = Listbox(
+        self.listbox = Listbox(
             parent,
             bd=0,
             bg="#F5F5F5",
@@ -420,27 +422,25 @@ class EditorSubjectList:
             highlightthickness=0,
             selectmode=SINGLE,
         )
-        self.subject_list.place(x=self.x + 40, y=self.y + 385, width=440, height=285)
+        self.listbox.place(x=self.x + 40, y=self.y + 385, width=440, height=285)
 
         # when an item is selected from the ListBox, call the function
-        self.subject_list.bind("<<ListboxSelect>>", self.handle_selection)
+        self.listbox.bind("<<ListboxSelect>>", self.handle_selection)
 
         # populate list upon init in case there are already subjects
-        self.update_list(subject_list)
-        # subject_list isn't stored because now the UI becomes the source of truth to the user until changes are registered.
+        self.subject_list = subject_list
+        self.active_subject_list = active_subject_list
+        self.update_list()
 
-    def update_list(self, subjects):
+    def update_list(self):
         """
-        Called upon unit to populate the list as well as by the callback function when a new subject is added
-
-        Args:
-            subjects (list): List of Subject objects to be populated into the list
+        Called upon to populate the list as well as by the callback function when a new subject is added
         """
-        self.subject_list.delete(0, END)  # existing list cleared
+        self.listbox.delete(0, END)  # existing list cleared
 
-        for subject in subjects:
+        for subject in self.subject_list + self.active_subject_list:
             display_name = f"{subject.name} {'HL' if subject.level == 1 else 'SL'}"
-            self.subject_list.insert(END, display_name)
+            self.listbox.insert(END, display_name)
 
     def handle_selection(self, event):
         """
@@ -449,5 +449,10 @@ class EditorSubjectList:
         Args:
             event (tkinter event): Passed into function by bind(); unused
         """
-        selected_index = self.subject_list.curselection()
-        self.callback(selected_index)
+        selected_index = self.listbox.curselection()[0]
+
+        if selected_index < len(self.subject_list):  # user selected an inactive subject
+            self.callback(self.subject_list, selected_index)
+        else:  # user selected an active subject
+            adjusted_index = selected_index - len(self.subject_list)
+            self.callback(self.active_subject_list, adjusted_index)
