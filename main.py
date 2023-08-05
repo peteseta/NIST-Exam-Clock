@@ -50,7 +50,6 @@ class Section:
         self.section_in_progress = False
         self.section_run = False
 
-        # TODO: use unique id to allow changing details after starting timer
         self.id = Section.id_counter
         Section.id_counter += 1
 
@@ -334,8 +333,8 @@ class EditorPage(ttk.Frame):
         Draws the UI (EditorSectionList component) to configure sections
 
         Args:
-            subject_list (list): Either self.controller.subjects or self.controller.active_subjects
-            subject_index (tuple): Tuple with index (0, 1, 2...) of the subject in the subject list
+            subject_list (list): App.subjects or App.active_subjects
+            subject_index (tuple): Tuple with index of the subject in the subject list
         """
         self.subject_list = subject_list
         self.subject_index = subject_index
@@ -355,7 +354,7 @@ class EditorPage(ttk.Frame):
     # called by EditorSectionList to register a section
     def register_sections(self, name_list, hours_list, minutes_list):
         """
-        Called by the save button in editor.EditorSectionList to modify a subject's sections
+        Called by the save button in EditorSectionList to modify a subject's sections
         Unpacks the section details and stores them in the subject's sections list
 
         Args:

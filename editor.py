@@ -1,5 +1,5 @@
 from tkinter import Canvas, Entry, Listbox, StringVar, IntVar
-from tkinter.constants import *
+from tkinter.constants import SINGLE, END
 
 import ttkbootstrap as ttk
 
@@ -14,8 +14,8 @@ class EditorSectionList:
 
         Args:
             parent (tkinter parent): A canvas housing all elements in EditorPage
-            existing_sections (list): List of Section objects the selected subject already has
-            callback (function): EditorPage.register_sections() unfolds the section data and stores them as Section objects in the selected subject's Subject.sections list
+            existing_sections (list): List of Section's the selected subject already has
+            callback (function): EditorPage.register_sections()
         """
         self.parent = parent
         self.callback = callback
@@ -50,7 +50,8 @@ class EditorSectionList:
 
     def add_section(self):
         """
-        Adds a new UI element for configuring an additional section and moves the modification buttons below the last section element.
+        Adds a new UI element for configuring an additional section
+        Moves the modification buttons below the last section element.
         """
         self.section_count += 1
         self.modify.place()  # move modification buttons
@@ -61,7 +62,8 @@ class EditorSectionList:
 
     def remove_section(self):
         """
-        Removes the last UI element for configuring a section and moves the modification buttons below the last section element.
+        Removes the last UI element for configuring a section
+        Moves the modification buttons below the last section element.
         """
         self.section_count -= 1
         self.modify.place()  # move modification buttons
@@ -75,7 +77,7 @@ class EditorSectionList:
         """
         Checks if all the section details are properly filled out
         Each section must have a name and at least 1 minute duration
-        If all entries are valid, the Save button in EdittorSectionModify is enabled.
+        If all entries are valid, the Save button in EditorSectionModify is enabled.
         If there are already 4 sections, the Add button is disabled.
 
         Accepts *args due to trace_add() requiring it for the callback.
@@ -105,7 +107,8 @@ class EditorSectionList:
 
     def apply(self):
         """
-        Retrives the data from all the entries and passes them to the callback as parallel arrays
+        Retrieves the data from all the entries,
+        passes them to the callback as parallel arrays
         """
         name_list = [component.name_var.get() for component in self.components]
         hours_list = [component.hours_var.get() for component in self.components]
@@ -115,8 +118,9 @@ class EditorSectionList:
 
     def destroy(self):
         """
-        When a new subject is selected, destroy() is called to cleanup the old subject
-        before a new instance of EditorSectionList is created to configure the new subject's sections
+        When a new subject is selected, destroy() is called to clean up the old subject
+        before a new instance of EditorSectionList is created to configure the new
+        subject's sections
         """
         self.modify.add_button.destroy()
         self.modify.remove_button.destroy()
@@ -141,11 +145,11 @@ class EditorSection:
 
         Args:
             parent (tkinter parent): A canvas housing all elements in EditorPage
-            controller (EditorSectionList object): Parent object "overseeing" the list of EditorSection's
-            section_number (int): Index (1, 2, 3...) of current section to be displayed as the section number
+            controller (EditorSectionList object): Parent object "overseeing" the list
+            section_number (int): Index of current section, displayed as the section no.
             name (str, optional): Name of section (if existing). Defaults to "".
-            hours (int, optional): Hour duration of section (if existing). Defaults to 0.
-            minutes (int, optional): Minute duration of section (if existing). Defaults to 0.
+            hours (int, optional): Hour duration of section (if existing).
+            minutes (int, optional): Minute duration of section (if existing).
         """
         self.controller = controller
         self.canvas = Canvas(parent, width=600, height=120)
@@ -209,7 +213,7 @@ class EditorSectionModify:
 
         Args:
             parent (tkinter parent): A canvas housing all elements in EditorPage
-            controller (EditorSectionList object): Parent object "overseeing" the list of EditorSection's
+            controller (EditorSectionList): Parent object "overseeing" the whole list
         """
         self.controller = controller
 
@@ -236,7 +240,8 @@ class EditorSectionModify:
 
     def place(self):
         """
-        Moves the modification button to the appropriate place below the last section UI element
+        Moves the modification button to the appropriate place,
+        below the last section UI element
         """
 
         # place at the very top if there are no sections yet
@@ -244,7 +249,7 @@ class EditorSectionModify:
             self.x = 522
             self.y = 100
 
-        # otherise place at the end of the last section
+        # otherwise place at the end of the last section
         else:
             self.x = 522
             self.y = 235 + (138 * (self.controller.section_count - 1))
@@ -257,12 +262,12 @@ class EditorSectionModify:
 class EditorNewSubject:
     def __init__(self, parent, callback):
         """
-        Initializes the UI component for adding a new subject (naming and selecting its level)
+        Initializes the UI component for adding a new subject
+        (naming and selecting its level)
 
         Args:
             parent (tkinter parent): A canvas housing all elements in EditorPage
-            callback (function): callback to EditorPage.create_subject to register the subejct.
-            It first checks for a duplicate then stores the subject details in the list App.subjects as a new Subject object
+            callback (function): EditorPage.create_subject()
         """
         self.parent = parent
         self.callback = callback
@@ -344,7 +349,7 @@ class EditorNewSubject:
 
     def set_level(self, level):
         """
-        Updates the label to give visual feedback on the selected level when a level button is clicked
+        Updates the level label to give visual feedback on the selection
 
         Args:
             level (int): 0 means SL, 1 means HL
@@ -356,8 +361,8 @@ class EditorNewSubject:
 
     def register_subject(self):
         """
-        Called when "add subject" is clicked. Calls the callback function to store the subject.
-        The entries are validated before the callback is called (so garbage data isn't passed on).
+        Called when "add subject" is clicked.
+        Entries are validated before the callback is called.
         If anything is invalid a status message is displayed.
         """
         self.subject_name = self.subject_name_entry.get()
@@ -396,7 +401,7 @@ class EditorSubjectList:
 
         Args:
             parent (tkinter parent): A canvas housing all elements in EditorPage
-            callback (function): EditorPage.configure_subject() will init an instance of EditorSectionList to configure the sections of the selected subject.
+            callback (function): EditorPage.configure_subject()
             subject_list (list): List of subjects without active timers
             active_subject_list (list): List of subjects with active timers
         """
@@ -436,7 +441,8 @@ class EditorSubjectList:
 
     def update_list(self):
         """
-        Called upon to populate the list as well as by the callback function when a new subject is added
+        Called upon init to populate the list
+        Called by callback function when a new subject is added
         """
         self.listbox.delete(0, END)  # existing list cleared
 
@@ -446,7 +452,8 @@ class EditorSubjectList:
 
     def handle_selection(self, event):
         """
-        Calls the callback to draw the section configuration component each time a new subject is selected
+        Calls the callback to draw the section configuration component
+        each time a new subject is selected
 
         Args:
             event (tkinter event): Passed into function by bind(); unused
