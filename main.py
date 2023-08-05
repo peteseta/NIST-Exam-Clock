@@ -61,21 +61,8 @@ class App(tk.Tk):
         Initializes base data structures
         """
 
-        # TODO: remove debug
-        self.subjects = [
-            Subject("2 min then 1 min", 1),
-            Subject("kshdfuhfukehfksuehfkusehfkusehfkusehfkusefhksef", 1),
-        ]
+        self.subjects = []
         self.active_subjects = []
-
-        # TODO: remove debug
-        self.subjects[0].sections.append(Section("Two Min Section", 0, 2))
-        self.subjects[0].sections.append(Section("One Min Section", 0, 1))
-        self.subjects[1].sections.append(
-            Section("skeuhfksuehfkusehfksuefhksuefhkusehfskuefh", 0, 1)
-        )
-        self.subjects[1].sections.append(Section("Test Section2", 0, 1))
-        self.subjects[1].sections.append(Section("Test Section3", 0, 1))
 
         self.root = ttk.Window(themename="robin")
         self.root.title("NIST Exam Clock")
