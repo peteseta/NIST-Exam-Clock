@@ -14,7 +14,7 @@ class Timer:
         """
         Initializes the UI component for one timer
         (one timer for one duration; one timer can have multiple subjects)
-        
+
         Args:
             parent (TimerPage): parent tkinter frame
             callback (function): TimerPage.finish()
