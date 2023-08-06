@@ -10,7 +10,6 @@ HEADING = [
 ]
 
 
-# https://stackoverflow.com/questions/44099594/how-to-make-a-tkinter-canvas-rectangle-with-rounded-corners
 # definition for rounded rectangle for styling
 def round_rectangle(canvas, x1, y1, x2, y2, radius=25, **kwargs):
     points = [
