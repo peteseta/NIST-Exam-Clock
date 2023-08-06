@@ -393,24 +393,33 @@ class EditorNewSubject:
 
 
 class EditorSubjectList:
-    def __init__(self, parent, callback, subject_list, active_subject_list):
+    def __init__(
+        self,
+        parent,
+        configure_callback,
+        rename_callback,
+        remove_callback,
+        subject_list,
+        active_subject_list,
+    ):
         """
         Initializes the UI component for selecting a subject to configure
 
         Args:
             parent (tkinter parent): A canvas housing all elements in EditorPage
-            callback (function): EditorPage.configure_subject()
+            configure_callback (function): EditorPage.configure_subject()
+            rename_callback (function): EditorPage.rename_subject()
+            remove_callback (function): EditorPage.remove_subject()
             subject_list (list): List of subjects without active timers
             active_subject_list (list): List of subjects with active timers
         """
-        self.callback = callback
-
-        self.x = 0
-        self.y = 0
+        self.configure_callback = configure_callback
+        self.rename_callback = rename_callback
+        self.remove_callback = remove_callback
 
         self.choose_subject_label = parent.create_text(
-            self.x + 41,
-            self.y + 335,
+            41,
+            335,
             anchor="nw",
             text="Choose subject to configure:",
             fill="#000000",
@@ -425,15 +434,33 @@ class EditorSubjectList:
             highlightthickness=0,
             selectmode=SINGLE,
         )
-        self.listbox.place(x=self.x + 40, y=self.y + 385, width=440, height=285)
+        self.listbox.place(x=40, y=385, width=440, height=285)
 
         # when an item is selected from the ListBox, call the function
         self.listbox.bind("<<ListboxSelect>>", self.handle_selection)
 
-        # populate list upon init in case there are already subjects
+        # populate list on init
         self.subject_list = subject_list
         self.active_subject_list = active_subject_list
         self.update_list()
+
+        self.remove_button = ttk.Button(
+            parent,
+            text="Remove Subject",
+            command=self.remove_subject,
+            state="disabled",
+            bootstyle="danger",
+        )
+        self.remove_button.place(x=40, y=670)
+
+        self.rename_button = ttk.Button(
+            parent,
+            text="Rename Subject",
+            command=self.rename_subject,
+            state="disabled",
+            bootstyle="info",
+        )
+        self.rename_button.place(x=170, y=670)
 
         # TODO: add remove subject button
         # TODO: add rename subject prompt
@@ -444,7 +471,7 @@ class EditorSubjectList:
         Called by callback function when a new subject is added
         """
 
-        self.listbox.delete(0, END)  # existing list cleared
+        self.listbox.delete(0, END)  # existing listbox cleared
 
         # Create dictionary mapping listbox indices to subject IDs
         all_subjects = sorted(
@@ -468,15 +495,21 @@ class EditorSubjectList:
         Args:
             event (tkinter event): Passed into function by bind(); unused
         """
-        # selected_index = self.listbox.curselection()[0]
-        #
-        # if selected_index < len(self.subject_list):  # user selected an inactive subject
-        #     self.callback(self.subject_list, selected_index)
-        # else:  # user selected an active subject
-        #     adjusted_index = selected_index - len(self.subject_list)
-        #     self.callback(self.active_subject_list, adjusted_index)
+
+        # enable remove and rename subject buttons
+        self.remove_button["state"] = "normal"
+        self.rename_button["state"] = "normal"
 
         selected_index = self.listbox.curselection()[0]
         selected_id = self.subject_ids[selected_index]
+        self.configure_callback(selected_id)
 
-        self.callback(selected_id)
+    def remove_subject(self):
+        selected_index = self.listbox.curselection()[0]
+        selected_id = self.subject_ids[selected_index]
+        self.remove_callback(selected_id)
+
+    def rename_subject(self):
+        selected_index = self.listbox.curselection()[0]
+        selected_id = self.subject_ids[selected_index]
+        self.rename_callback(selected_id)

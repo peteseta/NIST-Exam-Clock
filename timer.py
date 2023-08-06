@@ -8,9 +8,8 @@ from style import HEADING
 
 
 class Timer:
-    def __init__(
-        self, parent, callback, subjects_with_duration, duration, section_id
-    ) -> None:
+    # FUTURE: use unique id to allow changing details after starting timer
+    def __init__(self, parent, callback, subjects_with_duration, duration) -> None:
         """
         Initializes the UI component for one timer
         (one timer for one duration; one timer can have multiple subjects)
@@ -18,19 +17,14 @@ class Timer:
         Args:
             parent (TimerPage): parent tkinter frame
             callback (function): TimerPage.finish()
-            subjects_with_duration (list): list of subjects with the same duration
-            duration (datetime.timedelta): duration of the timer
-            section_id (list): IDs for each section in the timer
-            # FUTURE: use unique id to allow changing details after starting timer
+            subjects_with_duration (list): list of Subject objs with the same duration             (datetime.timedelta): duration of the timer
         """
         self.frame = ttk.Frame(parent, padding=10)
         self.frame.grid_rowconfigure(2, weight=1)  # expand Info to bottom
 
         self.callback = callback
         self.duration = duration
-
         self.subjects = subjects_with_duration
-        self.section_id = section_id
 
         self.progress_bar = ProgressBar(self.frame)
         self.subject_list = SubjectList(self.frame, subjects_with_duration)
@@ -86,6 +80,18 @@ class Timer:
             self.progress_bar.update(self.elapsed, self.remaining, self.duration)
 
         self.frame.after(1000, self.update_loop)
+
+    def add_subject(self, subject):
+        """
+        Adds a new subject to the timer
+        Extends self.subjects and adds a label for the subject
+
+        Args:
+            subject (Subject): Subject object to add
+        """
+
+        self.subjects.append(subject)
+        self.subject_list.add_subject(subject)
 
 
 class ProgressBar:
@@ -172,17 +178,28 @@ class SubjectList:
         self.labels = []
 
         for subject in subjects:
-            for section in subject.sections:
-                if not section.section_run:
-                    self.labels.append(
-                        SubjectLabel(self.frame, subject.name, section.name)
-                    )
-                    self.labels[-1].frame.grid(row=len(self.labels) - 1, sticky="w")
-                    break  # we only want the first section not run for each subject
+            self.add_subject(subject)
+
+    def add_subject(self, subject):
+        """
+        Adds a new subject to the list of labels
+
+        Args:
+            subject (Subject): Subject object to add
+        """
+
+        for section in subject.sections:
+            if not section.section_run:
+                display_name = f"{subject.name} {'HL' if subject.level == 1 else 'SL'}"
+                self.labels.append(
+                    SubjectLabel(self.frame, display_name, section.name, subject.id)
+                )
+                self.labels[-1].frame.grid(row=len(self.labels) - 1, sticky="w")
+                break  # we only want the first section not run for each subject
 
 
 class SubjectLabel:
-    def __init__(self, parent, subject_name, section_name) -> None:
+    def __init__(self, parent, subject_name, section_name, subject_id) -> None:
         """
         Initializes the UI for a single subject's label
 
@@ -190,9 +207,14 @@ class SubjectLabel:
             parent (ttk.Frame): parent SubjectList frame
             subject_name (str): name of the subject
             section_name (str): name of the section
+            subject_id (int): id of the subject
         """
+
+        self.id = subject_id
+
         self.frame = ttk.Frame(parent, width=440)
-        ttk.Label(
+
+        self.subject_name_label = ttk.Label(
             self.frame,
             text=subject_name,
             wraplength=440,
@@ -200,7 +222,9 @@ class SubjectLabel:
             anchor="w",
             foreground="#121212",
             font=HEADING[1],
-        ).grid(row=0, column=0, sticky="w")
+        )
+        self.subject_name_label.grid(row=0, column=0, sticky="w")
+
         ttk.Label(
             self.frame,
             text=section_name,

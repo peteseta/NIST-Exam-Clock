@@ -1,4 +1,5 @@
 import tkinter as tk
+import tkinter.simpledialog as simpledialog
 from collections import defaultdict
 from datetime import timedelta
 
@@ -22,11 +23,10 @@ class Subject:
         self.sections = []
 
         self.id = Subject.id_counter
-        self.timestamp = arrow.now()
         Subject.id_counter += 1
 
-    def add_exam(self, exam):
-        self.sections.append(exam)
+        self.timestamp = arrow.now()
+        self.subject_queued = False
 
 
 class Section:
@@ -88,7 +88,7 @@ class App(tk.Tk):
         Handles creating a new popup window, e.g. for the editor
 
         Args:
-            frame_class (EditorPage): Object that defines the frame to be shown.
+            frame_class (class): Object that defines the frame to be shown.
             width (int, optional): Width of popup. Defaults to 1520.
             height (int, optional): height of popup. Defaults to 760.
         """
@@ -188,7 +188,7 @@ class TimerPage(ttk.Frame):
         ttk.Frame.__init__(self, parent, padding=20)
         self.grid_rowconfigure(0, weight=1)
 
-        self.timers = []
+        self.timers = []  # list of timer objects
 
         self.group_timers()
         self.draw_timers()
@@ -208,16 +208,30 @@ class TimerPage(ttk.Frame):
                     duration = timedelta(hours=section.hours, minutes=section.minutes)
                     sections_by_duration[duration].append(subject)
                     break
-                else:  # no break, means all sections have been run
-                    continue  # skip this subject
 
         # add a timer for each duration
         for duration in sorted(sections_by_duration.keys()):
-            # pass the subjects with the same duration
-            timer = Timer(
-                self, self.finish, sections_by_duration[duration], duration, 0
+            # check if a timer with this duration already exists
+            existing_timer = next(
+                (t for t in self.timers if t.duration == duration), None
             )
-            self.timers.append(timer)
+            if existing_timer:
+                # if it does, add the new subjects to this timer
+                for subject in sections_by_duration[duration]:
+                    # don't add subjects already in the timer
+                    if not self.get_timer_by_id(subject.id):
+                        existing_timer.add_subject(subject)
+                        subject.subject_queued = True
+            else:
+                # otherwise, create a new timer
+                timer = Timer(
+                    self, self.finish, sections_by_duration[duration], duration
+                )
+                self.timers.append(timer)
+                for subject in sections_by_duration[
+                    duration
+                ]:  # set the flag for each subject
+                    subject.subject_queued = True
 
     def draw_timers(self):
         """
@@ -257,6 +271,7 @@ class TimerPage(ttk.Frame):
         for subject in subjects:
             for section in subject.sections:
                 if section.section_in_progress:
+                    subject.subject_queued = False
                     section.section_in_progress = False
                     section.section_run = True
                     break
@@ -287,6 +302,52 @@ class TimerPage(ttk.Frame):
         self.group_timers()
         self.draw_timers()
 
+    def get_timer_by_id(self, subject_id) -> Timer | None:
+        """
+        Returns the timer object that contains the subject with the given ID
+        """
+
+        for timer in self.timers:
+            for subject in timer.subjects:
+                if subject.id == subject_id:
+                    return timer
+        return None
+
+    def update_subject_name(self, subject_id, name):
+        """
+        Updates the name of the subject with the given ID
+        """
+        timer = self.get_timer_by_id(subject_id)
+        if timer:
+            for subject_label in timer.subject_list.labels:
+                if subject_label.id == subject_id:
+                    subject_label.subject_name_label.configure(text=name)
+                    break
+        else:
+            return Exception("Subject not found")
+
+    def remove_subject(self, subject_id):
+        """
+        Removes the subject with the given ID from the timer
+        If the timer only contains that subject, destroys it,
+        otherwise just removes the subject
+        """
+        timer = self.get_timer_by_id(subject_id)
+        if timer:
+            if len(timer.subject_list.labels) == 1:
+                timer.frame.destroy()
+                self.timers.remove(timer)
+            else:
+                for subject_label in timer.subject_list.labels:
+                    if subject_label.id == subject_id:
+                        subject_label.frame.destroy()
+                        break
+        else:
+            return Exception("Subject not found")
+
+    def update_subject_duration(self, subject_id, duration):
+        pass
+
 
 class EditorPage(ttk.Frame):
     def __init__(self, parent, controller):
@@ -312,6 +373,8 @@ class EditorPage(ttk.Frame):
         self.listbox = EditorSubjectList(
             self.editor_canvas,
             self.configure_subject,
+            self.rename_subject,
+            self.remove_subject,
             self.controller.subjects,
             self.controller.active_subjects,
         )
@@ -369,6 +432,37 @@ class EditorPage(ttk.Frame):
             subject.sections,
             self.register_sections,
         )
+
+    def remove_subject(self, subject_id):
+        subject = self.controller.get_subject(subject_id)
+
+        # remove subject object
+        if subject in self.controller.subjects:
+            self.controller.subjects.remove(subject)
+        elif subject in self.controller.active_subjects:
+            self.controller.active_subjects.remove(subject)
+
+        # remove from listbox and destroy configuration ui
+        self.listbox.update_list()
+        self.section_config.destroy()
+
+        # remove from TimerPage
+        self.controller.timer_page.remove_subject(subject_id)
+
+    def rename_subject(self, subject_id):
+        # dialog = QueryDialog("New name:")
+        # dialog.show()
+        new_name = simpledialog.askstring("Rename subject", "New name:")
+
+        # update name in subject object
+        subject = self.controller.get_subject(subject_id)
+        subject.name = new_name
+
+        # update name in listbox
+        self.listbox.update_list()
+
+        # update name in TimerPage
+        self.controller.timer_page.update_subject_name(subject_id, new_name)
 
     def register_sections(self, name_list, hours_list, minutes_list):
         """
