@@ -93,3 +93,159 @@ You'll need to import it at the top of your file:
 ```python
 from tkinter import simpledialog
 ```
+
+> This code starts all the timers:
+
+   ```
+       def start_timers(self):
+           """
+           Starts all the inactive timers on the page
+           Marks each subject as active
+           Disables the button to advance to the next section
+           """
+           for timer in self.timers:
+               if not timer.is_running:
+                   # Mark subjects as active
+                   for subject in timer.subjects:
+                       self.controller.active_subjects.append(subject)
+                       if subject in self.controller.subjects:
+                           self.controller.subjects.remove(subject)
+                   timer.start_timer()
+   
+           self.controller.header.advance_button.configure(state="disabled")
+   ```
+
+> Can you give me a full example of how I can create a dialog that will allow me to
+> choose some but not all timers to start (e.g. if the user wanted to start only certain
+> timers).
+> Now what if the user wanted to start only certain subjects? Would we have to separate
+> and regroup the timers to not include the subject the user does not want started?
+
+To create a dialog that allows the user to choose some but not all timers to start, you
+could use a `Toplevel` window with a `Checkbutton` for each timer. The user could check
+or uncheck each `Checkbutton` to indicate whether they want that timer to start.
+
+Here's an example of how you could create this dialog:
+
+```python
+class StartTimersDialog(tk.Toplevel):
+   def __init__(self, parent, timers):
+      super().__init__(parent)
+      self.title("Start Timers")
+      self.timers = timers
+
+      # Create a Checkbutton for each timer
+      self.check_vars = []
+      for timer in timers:
+         check_var = tk.BooleanVar(value=True)
+         self.check_vars.append(check_var)
+         check_button = tk.Checkbutton(self, text=str(timer), var=check_var)
+         check_button.pack()
+
+      # Create a button to start the selected timers
+      start_button = tk.Button(self, text="Start", command=self.start_timers)
+      start_button.pack()
+
+   def start_timers(self):
+      for timer, check_var in zip(self.timers, self.check_vars):
+         if check_var.get():
+            timer.start_timer()
+      self.destroy()
+```
+
+Then, in your `TimerPage` class, you could create an instance of this dialog when the
+user clicks the Start button:
+
+```python
+def on_start_button_click(self):
+   StartTimersDialog(self, self.timers)
+```
+
+This will create a new window with a `Checkbutton` for each timer. The user can check or
+uncheck each `Checkbutton` to indicate whether they want that timer to start. When they
+click the Start button, all the selected timers will start, and the dialog will close.
+
+As for your second question, if the user wanted to start only certain subjects, you
+would indeed need to separate and regroup the timers to not include the subjects the
+user does not want started. This would involve creating a similar dialog to the one
+above, but with a `Checkbutton` for each subject instead of each timer. When the user
+selects the subjects they want to start and clicks the Start button, you would need to
+regroup the timers based on the selected subjects and then start those timers.
+
+> Can you show me exactly how I can do the regrouping in my code? We would need to group
+> the timers that are selected to be started and then group the non-selected timers
+> without starting those right? Will this require large changes?
+> Ideally I would want the popup window to contain two tabs, one for choosing the timer
+> to start and one for choosing individual subjects to start. This can be done with a
+> tkinter notebook.
+
+Yes, you're correct. To start only selected subjects, you would need to regroup the
+timers based on the selected subjects and start those timers, then regroup the remaining
+subjects without starting those timers.
+
+This would require some changes to your current code, but they should not be too large.
+The main change would be to modify `group_timers` to take a list of subjects as an
+argument, and only group those subjects.
+
+Here's an example of how you could modify `group_timers`:
+
+```python
+def group_timers(self, subjects_to_group):
+   """
+   Groups the given subjects' first section (that hasn't been run) by duration
+   Creates a timer for each duration
+   """
+   sections_by_duration = defaultdict(list)
+
+   for subject in subjects_to_group:
+      for section in subject.sections:
+         if not section.section_run:
+            section.section_in_progress = True
+            duration = timedelta(hours=section.hours, minutes=section.minutes)
+            sections_by_duration[duration].append(subject)
+            self.controller.active_subjects.append(subject)
+            break
+
+   # remove active subjects from subjects
+   for subject in self.controller.active_subjects:
+      if subject in self.controller.subjects:
+         self.controller.subjects.remove(subject)
+
+   # add a timer for each duration
+   for duration in sorted(sections_by_duration.keys()):
+      timer = Timer(
+         self, self.finish, sections_by_duration[duration], duration, 0
+      )
+      self.timers.append(timer)
+```
+
+Then, in your dialog, you would get the selected subjects, call `group_timers` with
+those subjects, start the timers, and then call `group_timers` again with the remaining
+subjects.
+
+As for your idea of having two tabs in the popup window, one for choosing the timer to
+start and one for choosing individual subjects to start, that can indeed be done with
+a `ttk.Notebook`. You would create two frames, one for each tab, and add them to the
+notebook. Each frame would contain the UI for selecting the timers or subjects to start.
+
+Here's a basic example of how you could create a notebook with two tabs:
+
+```python
+class StartDialog(tk.Toplevel):
+   def __init__(self, parent):
+      super().__init__(parent)
+      self.title("Start Timers or Subjects")
+
+      self.notebook = ttk.Notebook(self)
+
+      self.timers_frame = ttk.Frame(self.notebook)
+      self.subjects_frame = ttk.Frame(self.notebook)
+
+      self.notebook.add(self.timers_frame, text="Timers")
+      self.notebook.add(self.subjects_frame, text="Subjects")
+
+      self.notebook.pack(expand=True, fill="both")
+```
+
+You would then add the UI for selecting the timers or subjects to the `timers_frame`
+and `subjects_frame` respectively.
