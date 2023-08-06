@@ -122,7 +122,6 @@ class ProgressBar:
             length=440,
             variable=self.progressbar_value,
             mode="determinate",
-            bootstyle="primary",
         )
         self.progressbar.place(x=0, y=70)
         self.progressbar_value.set(50)
@@ -150,7 +149,7 @@ class ProgressBar:
         self.canvas.itemconfig(self.remaining, text=remaining_text)
 
         self.progressbar_value.set(
-            100 * elapsed.total_seconds() / duration.total_seconds()
+            round(100 * elapsed.total_seconds() / duration.total_seconds())
         )
 
 
