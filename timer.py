@@ -169,12 +169,14 @@ class SubjectList:
 
         self.labels = []
 
-        for index, subject in enumerate(subjects):
-            if subject.sections[index].section_in_progress:
-                self.labels.append(
-                    SubjectLabel(self.frame, subject.name, subject.sections[index].name)
-                )
-                self.labels[index].frame.grid(row=index, sticky="w")
+        for subject in subjects:
+            for section in subject.sections:
+                if not section.section_run:
+                    self.labels.append(
+                        SubjectLabel(self.frame, subject.name, section.name)
+                    )
+                    self.labels[-1].frame.grid(row=len(self.labels) - 1, sticky="w")
+                    break  # move on to the next subject
 
 
 class SubjectLabel:

@@ -18,10 +18,16 @@ class Subject:
     Represents an IB subject which may contain multiple papers.
     """
 
+    id_counter = 0
+
     def __init__(self, name, level) -> None:
         self.name = name
         self.level = level  # 0 for SL, 1 for HL
         self.sections = []
+
+        self.id = Subject.id_counter
+        self.timestamp = arrow.now()
+        Subject.id_counter += 1
 
     def add_exam(self, exam):
         self.sections.append(exam)
@@ -90,6 +96,21 @@ class App(tk.Tk):
         popup = tk.Toplevel(self.root)
         popup.geometry(f"{width}x{height}")
         frame_class(popup, self)
+
+    def get_subject(self, requested_id):
+        """
+        Returns the subject that has the given ID.
+
+        Args:
+            requested_id (int): ID of the subject to be returned.
+
+        Returns:
+            Subject: Subject with the given ID.
+        """
+
+        for subject in self.subjects + self.active_subjects:
+            if subject.id == requested_id:
+                return subject
 
 
 # TODO: add stop exams button
@@ -180,21 +201,16 @@ class TimerPage(ttk.Frame):
         """
         sections_by_duration = defaultdict(list)
 
+        # group the first not yet run section of each subject by duration
         for subject in self.controller.subjects:
             for section in subject.sections:
                 if not section.section_run:
                     section.section_in_progress = True
                     duration = timedelta(hours=section.hours, minutes=section.minutes)
                     sections_by_duration[duration].append(subject)
-                    self.controller.active_subjects.append(
-                        subject
-                    )  # add subject to active_subjects
                     break
-
-        # remove active subjects from subjects
-        for subject in self.controller.active_subjects:
-            if subject in self.controller.subjects:
-                self.controller.subjects.remove(subject)
+                else:  # no break, means all sections have been run
+                    continue  # skip this subject
 
         # add a timer for each duration
         for duration in sorted(sections_by_duration.keys()):
@@ -214,10 +230,16 @@ class TimerPage(ttk.Frame):
     def start_timers(self):
         """
         Starts all the inactive timers on the page
+        Marks each subject as active
         Disables the button to advance to the next section
         """
         for timer in self.timers:
             if not timer.is_running:
+                # Mark subjects as active
+                for subject in timer.subjects:
+                    self.controller.active_subjects.append(subject)
+                    if subject in self.controller.subjects:
+                        self.controller.subjects.remove(subject)
                 timer.start_timer()
 
         self.controller.header.advance_button.configure(state="disabled")
@@ -277,6 +299,8 @@ class EditorPage(ttk.Frame):
         ttk.Frame.__init__(self, parent)
         self.pack(fill="both", expand=True)
 
+        self.active_subject_id = -1
+
         self.editor_canvas = tk.Canvas(self)
         self.editor_canvas.pack(fill="both", expand=True)
 
@@ -288,6 +312,9 @@ class EditorPage(ttk.Frame):
             self.controller.subjects,
             self.controller.active_subjects,
         )
+
+        # bind to window closing
+        parent.protocol("WM_DELETE_WINDOW", self.close)
 
     def create_subject(self, subject_name, level):
         """
@@ -314,31 +341,32 @@ class EditorPage(ttk.Frame):
         # redraw list of subjects
         self.listbox.update_list()
 
-    def configure_subject(self, subject_list, subject_index):
+    def configure_subject(self, subject_id):
         """
         Called by editor.EditorSubjectList each time a subject is selected
         Draws the UI (EditorSectionList component) to configure sections
 
         Args:
             subject_list (list): App.subjects or App.active_subjects
-            subject_index (tuple): Tuple with index of the subject in the subject list
+            subject_index (int): Index of the subject in subject_list
         """
-        self.subject_list = subject_list
-        self.subject_index = subject_index
 
         # destroy any existing UI (if there was a previously selected subject)
         # old EditorSectionList would become ready for garbage collection (safe)
         if hasattr(self, "section_config"):
             self.section_config.destroy()
 
+        # subject object that has the ID, whether it's active or not
+        self.active_subject_id = subject_id
+        subject = self.controller.get_subject(self.active_subject_id)
+
         # draws the UI (EditorSectionList component) to configure sections
         self.section_config = EditorSectionList(
             self.editor_canvas,
-            self.subject_list[subject_index].sections,
+            subject.sections,
             self.register_sections,
         )
 
-    # called by EditorSectionList to register a section
     def register_sections(self, name_list, hours_list, minutes_list):
         """
         Called by the save button in EditorSectionList to modify a subject's sections
@@ -349,17 +377,28 @@ class EditorPage(ttk.Frame):
             hours_list (list): List of hour components of the sections
             minutes_list (list): List of minute components of the sections
         """
+
         # clear existing sections
-        self.subject_list[self.subject_index].sections = []
+        subject = self.controller.get_subject(self.active_subject_id)
+        subject.sections = []
 
         # populate sections list with Section objects
         for name, hours, minutes in zip(name_list, hours_list, minutes_list):
             section = Section(name, hours, minutes)
-            self.subject_list[self.subject_index].sections.append(section)
+            subject.sections.append(section)
 
-        # regroup and redraw timers
+        # update the listbox and the dictionary
+        self.listbox.update_list()
+
+    def close(self):
+        """
+        When the editor window is closed, redraw and regroup all timers
+        """
         self.controller.timer_page.group_timers()
         self.controller.timer_page.draw_timers()
+
+        # destroy the editor window
+        self.master.destroy()
 
 
 # create an instance of the app

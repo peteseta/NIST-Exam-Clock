@@ -444,24 +444,40 @@ class EditorSubjectList:
         Called upon init to populate the list
         Called by callback function when a new subject is added
         """
+
         self.listbox.delete(0, END)  # existing list cleared
 
-        for subject in self.subject_list + self.active_subject_list:
+        # Create dictionary mapping listbox indices to subject IDs
+        all_subjects = sorted(
+            self.subject_list + self.active_subject_list,
+            key=lambda subject: subject.timestamp,
+        )
+
+        self.subject_ids = {}
+
+        for index, subject in enumerate(all_subjects):
+            self.subject_ids[index] = subject.id
+
             display_name = f"{subject.name} {'HL' if subject.level == 1 else 'SL'}"
             self.listbox.insert(END, display_name)
 
     def handle_selection(self, event):
         """
-        Calls the callback to draw the section configuration component
-        each time a new subject is selected
+        Calls EditorPage.configure_subject() to draw the section configuration
+        component each time a new subject is selected
 
         Args:
             event (tkinter event): Passed into function by bind(); unused
         """
-        selected_index = self.listbox.curselection()[0]
+        # selected_index = self.listbox.curselection()[0]
+        #
+        # if selected_index < len(self.subject_list):  # user selected an inactive subject
+        #     self.callback(self.subject_list, selected_index)
+        # else:  # user selected an active subject
+        #     adjusted_index = selected_index - len(self.subject_list)
+        #     self.callback(self.active_subject_list, adjusted_index)
 
-        if selected_index < len(self.subject_list):  # user selected an inactive subject
-            self.callback(self.subject_list, selected_index)
-        else:  # user selected an active subject
-            adjusted_index = selected_index - len(self.subject_list)
-            self.callback(self.active_subject_list, adjusted_index)
+        selected_index = self.listbox.curselection()[0]
+        selected_id = self.subject_ids[selected_index]
+
+        self.callback(selected_id)
