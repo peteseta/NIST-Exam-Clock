@@ -9,10 +9,6 @@ from editor import EditorNewSubject, EditorSubjectList, EditorSectionList
 from timer import Timer
 
 
-# https://www.digitalocean.com/community/tutorials/tkinter-working-with-classes
-# https://ttkbootstrap.readthedocs.io/en/latest/themes/themecreator/
-
-
 class Subject:
     """
     Represents an IB subject which may contain multiple papers.
@@ -69,6 +65,9 @@ class App(tk.Tk):
 
         self.subjects = []
         self.active_subjects = []
+
+        self.subjects.append(Subject("English", 0))
+        self.subjects[0].sections.append(Section("Paper 1", 0, 0.1))
 
         self.root = ttk.Window(themename="robin")
         self.root.title("NIST Exam Clock")
@@ -250,6 +249,9 @@ class TimerPage(ttk.Frame):
         Marks the sections as run and adds the subjects back to the subjects list
         so that it is eligible for the next grouping run.
         Enables the button to advance to the next section
+
+        Args:
+            subjects (list): List of Subject objects in the finished timer
         """
         # mark sections as run
         for subject in subjects:
@@ -257,16 +259,17 @@ class TimerPage(ttk.Frame):
                 if section.section_in_progress:
                     section.section_in_progress = False
                     section.section_run = True
-                    self.controller.subjects.append(
-                        subject
-                    )  # add subject back to subjects
-                    if subject in self.controller.active_subjects:
-                        self.controller.active_subjects.remove(
-                            subject
-                        )  # remove subject from active_subjects
+                    break
+
+            # mark subject as inactive
+            self.controller.subjects.append(subject)
+            if subject in self.controller.active_subjects:
+                self.controller.active_subjects.remove(subject)
 
         # activate button to start the next section
         self.controller.header.advance_button.configure(state="normal")
+
+        # TODO: visual cue for finished section e.g. faded out
 
     def advance_timers(self):
         """

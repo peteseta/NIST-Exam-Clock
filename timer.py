@@ -21,7 +21,7 @@ class Timer:
             subjects_with_duration (list): list of subjects with the same duration
             duration (datetime.timedelta): duration of the timer
             section_id (list): IDs for each section in the timer
-            # TODO: use unique id to allow changing details after starting timer
+            # FUTURE: use unique id to allow changing details after starting timer
         """
         self.frame = ttk.Frame(parent, padding=10)
         self.frame.grid_rowconfigure(2, weight=1)  # expand Info to bottom
@@ -135,6 +135,9 @@ class ProgressBar:
             remaining (datetime.timedelta): remaining time
             duration (datetime.timedelta): total duration of the section
         """
+
+        # TODO: flash warning at 5 and 30min if applicable
+
         if elapsed.total_seconds() < 3600:
             elapsed_text = str(elapsed)[2:7]  # format as MM:SS
         else:
@@ -175,7 +178,7 @@ class SubjectList:
                         SubjectLabel(self.frame, subject.name, section.name)
                     )
                     self.labels[-1].frame.grid(row=len(self.labels) - 1, sticky="w")
-                    break  # move on to the next subject
+                    break  # we only want the first section not run for each subject
 
 
 class SubjectLabel:

@@ -436,6 +436,7 @@ class EditorSubjectList:
         self.update_list()
 
         # TODO: add remove subject button
+        # TODO: add rename subject prompt
 
     def update_list(self):
         """
