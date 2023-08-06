@@ -84,26 +84,24 @@ class EditorSectionList:
         """
 
         # no more than 4 sections
-        if self.section_count >= 4:
-            self.modify.add_button.config(state="disabled")
-        else:
-            self.modify.add_button.config(state="active")
+        self.modify.add_button.config(
+            state="disabled" if self.section_count >= 4 else "active"
+        )
 
         # no less than 0 sections
-        if self.section_count == 0:
-            self.modify.remove_button.config(state="disabled")
+        self.modify.remove_button.config(
+            state="disabled" if self.section_count == 0 else "active"
+        )
+
+        # check if any entry is empty or has 0 hours and minutes
+        if any(
+            component.name_var.get() == ""
+            or ((component.hours_var.get() + component.minutes_var.get()) == 0)
+            for component in self.components
+        ):
+            self.modify.save_button.config(state="disabled")
         else:
-            self.modify.remove_button.config(state="active")
-
-        for component in self.components:
-            if (component.name_var.get() == "") or (
-                (component.hours_var.get() + component.minutes_var.get()) == 0
-            ):
-                self.modify.save_button.config(state="disabled")
-                return
-
-        # enable the Save button if all entries are filled
-        self.modify.save_button.config(state="active")
+            self.modify.save_button.config(state="active")  # enable save button
 
     def apply(self):
         """
