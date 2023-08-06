@@ -113,7 +113,7 @@ class App(tk.Tk):
 
 
 # TODO: add stop exams button
-# TODO: add custom start (choose subjects to start)
+# FUTURE: add custom start (choose subjects to start)
 class ClockHeader(ttk.Frame):
     def __init__(self, parent, controller):
         """
@@ -267,9 +267,10 @@ class TimerPage(ttk.Frame):
         Args:
             subjects (list): List of Subject objects in the finished timer
         """
-        # mark sections as run
+
         for subject in subjects:
             for section in subject.sections:
+                # mark sections as run
                 if section.section_in_progress:
                     subject.subject_queued = False
                     section.section_in_progress = False
@@ -283,8 +284,6 @@ class TimerPage(ttk.Frame):
 
         # activate button to start the next section
         self.controller.header.advance_button.configure(state="normal")
-
-        # TODO: visual cue for finished section e.g. faded out
 
     def advance_timers(self):
         """

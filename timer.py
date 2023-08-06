@@ -67,15 +67,13 @@ class Timer:
     def update_loop(self):
         """
         Calculates the elapsed and remaining time
-        If the timer is over, call the callback
-        Calls itself to update every second
+        If the timer is over, calls the finish() function
         """
         self.elapsed = datetime.datetime.now() - self.start_time
         self.remaining = self.end_time - datetime.datetime.now()
 
         if datetime.datetime.now() >= self.end_time:
-            self.finished = True
-            self.callback(self.subjects)
+            self.finish()
         else:
             self.progress_bar.update(self.elapsed, self.remaining, self.duration)
 
@@ -93,6 +91,21 @@ class Timer:
         self.subjects.append(subject)
         self.subject_list.add_subject(subject)
 
+    def finish(self):
+        """
+        Sets the progress bar to full and crosses out the elapsed/remaining text
+        Hides the Info frame
+        Calls TimerPage.finish()
+        """
+        self.progress_bar.progressbar_value.set(100)
+        self.progress_bar.set_overstrike()
+
+        # Destroy the Info
+        self.info.frame.destroy()
+
+        self.finished = True
+        self.callback(self.subjects)
+
 
 class ProgressBar:
     def __init__(self, parent) -> None:
@@ -108,18 +121,16 @@ class ProgressBar:
         self.canvas.create_text(
             0.0, 0.0, anchor="nw", text="ELAPSED", fill="#121212", font=HEADING[3]
         )
-
-        self.elapsed = self.canvas.create_text(
-            0, 25.0, anchor="nw", text="47m 13s", fill="#121212", font=HEADING[1]
-        )
+        self.elapsed_label = ttk.Label(self.canvas, text="47m 13s", font=HEADING[1])
+        self.canvas.create_window(0, 25, anchor="nw", window=self.elapsed_label)
 
         self.canvas.create_text(
             440, 0.0, anchor="ne", text="REMAINING", fill="#121212", font=HEADING[2]
         )
-
-        self.remaining = self.canvas.create_text(
-            440, 25.0, anchor="ne", text="1h 47m 13s", fill="#121212", font=HEADING[1]
+        self.remaining_label = ttk.Label(
+            self.canvas, text="1h 47m 13s", font=HEADING[1]
         )
+        self.canvas.create_window(440, 25, anchor="ne", window=self.remaining_label)
 
         self.progressbar_value = tk.IntVar()
         self.progressbar = ttk.Progressbar(
@@ -154,11 +165,20 @@ class ProgressBar:
         else:
             remaining_text = str(remaining).split(".")[0]  # format as HH:MM:SS
 
-        self.canvas.itemconfig(self.elapsed, text=elapsed_text)
-        self.canvas.itemconfig(self.remaining, text=remaining_text)
+        self.elapsed_label.configure(text=elapsed_text)
+        self.remaining_label.configure(text=remaining_text)
 
         self.progressbar_value.set(
             round(100 * elapsed.total_seconds() / duration.total_seconds())
+        )
+
+    def set_overstrike(self):
+        font_family, font_size, font_style = HEADING[1].split()
+        self.elapsed_label.configure(
+            font=(font_family, int(font_size), font_style + " overstrike")
+        )
+        self.remaining_label.configure(
+            font=(font_family, int(font_size), font_style + " overstrike")
         )
 
 
