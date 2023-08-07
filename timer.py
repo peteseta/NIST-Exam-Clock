@@ -17,7 +17,8 @@ class Timer:
         Args:
             parent (TimerPage): parent tkinter frame
             callback (function): TimerPage.finish()
-            subjects_with_duration (list): list of Subject objs with the same duration             (datetime.timedelta): duration of the timer
+            subjects_with_duration (list): list of Subject objs with the same duration
+            (datetime.timedelta): duration of the timer
         """
         self.frame = ttk.Frame(parent, padding=10)
         self.frame.grid_rowconfigure(2, weight=1)  # expand Info to bottom
@@ -72,12 +73,11 @@ class Timer:
         self.elapsed = datetime.datetime.now() - self.start_time
         self.remaining = self.end_time - datetime.datetime.now()
 
-        if datetime.datetime.now() >= self.end_time:
+        if datetime.datetime.now() >= self.end_time and not self.finished:
             self.finish()
         else:
             self.progress_bar.update(self.elapsed, self.remaining, self.duration)
-
-        self.frame.after(1000, self.update_loop)
+            self.frame.after(1000, self.update_loop)
 
     def add_subject(self, subject):
         """
@@ -97,13 +97,12 @@ class Timer:
         Hides the Info frame
         Calls TimerPage.finish()
         """
-        self.progress_bar.progressbar_value.set(100)
-        self.progress_bar.set_overstrike()
+        self.finished = True
 
-        # Destroy the Info
+        self.progress_bar.update(self.duration, datetime.timedelta(0), self.duration)
+        self.progress_bar.set_overstrike()
         self.info.frame.destroy()
 
-        self.finished = True
         self.callback(self.subjects)
 
 
@@ -153,7 +152,7 @@ class ProgressBar:
             duration (datetime.timedelta): total duration of the section
         """
 
-        # TODO: flash warning at 5 and 30min if applicable
+        # FUTURE: flash warning at 5 and 30min if applicable
 
         if elapsed.total_seconds() < 3600:
             elapsed_text = str(elapsed)[2:7]  # format as MM:SS
