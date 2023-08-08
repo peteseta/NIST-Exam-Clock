@@ -462,6 +462,8 @@ class EditorSubjectList:
         )
         self.rename_button.place(x=170, y=670)
 
+        # TODO: button to change subject level
+
     def update_list(self):
         """
         Called upon init to populate the list

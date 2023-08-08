@@ -26,7 +26,6 @@ class Subject:
         Subject.id_counter += 1
 
         self.timestamp = arrow.now()
-        self.subject_queued = False
 
 
 class Section:
@@ -216,22 +215,21 @@ class TimerPage(ttk.Frame):
                 (t for t in self.timers if t.duration == duration), None
             )
             if existing_timer:
-                # if it does, add the new subjects to this timer
+                # if it does, add the subjects to this timer
                 for subject in sections_by_duration[duration]:
-                    # don't add subjects already in the timer
+                    # exclude subjects already in the timer
                     if not self.get_timer_by_id(subject.id):
                         existing_timer.add_subject(subject)
-                        subject.subject_queued = True
             else:
-                # otherwise, create a new timer
-                timer = Timer(
-                    self, self.finish, sections_by_duration[duration], duration
-                )
-                self.timers.append(timer)
-                for subject in sections_by_duration[
-                    duration
-                ]:  # set the flag for each subject
-                    subject.subject_queued = True
+                # check if subjects are not already in with another timer
+                subjects_for_new_timer = [
+                    subject
+                    for subject in sections_by_duration[duration]
+                    if not self.get_timer_by_id(subject.id)
+                ]
+                if subjects_for_new_timer:
+                    timer = Timer(self, self.finish, subjects_for_new_timer, duration)
+                    self.timers.append(timer)
 
     def draw_timers(self):
         """
@@ -473,6 +471,8 @@ class EditorPage(ttk.Frame):
             hours_list (list): List of hour components of the sections
             minutes_list (list): List of minute components of the sections
         """
+
+        # TODO: check for edited section name and update in timer page
 
         # clear existing sections
         subject = self.controller.get_subject(self.active_subject_id)
