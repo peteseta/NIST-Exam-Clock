@@ -210,9 +210,14 @@ class TimerPage(ttk.Frame):
 
         # add a timer for each duration
         for duration in sorted(sections_by_duration.keys()):
-            # check if a timer with this duration already exists
+            # check if an unstarted timer with this duration already exists
             existing_timer = next(
-                (t for t in self.timers if t.duration == duration), None
+                (
+                    t
+                    for t in self.timers
+                    if t.duration == duration and t.is_running == False
+                ),
+                None,
             )
             if existing_timer:
                 # if it does, add the subjects to this timer
