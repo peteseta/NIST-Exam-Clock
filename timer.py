@@ -20,7 +20,7 @@ class Timer:
             subjects_with_duration (list): list of Subject objs with the same duration
             (datetime.timedelta): duration of the timer
         """
-        self.frame = ttk.Frame(parent, padding=10)
+        self.frame = ttk.Frame(parent, padding=10, bootstyle="warning")
         self.frame.grid_rowconfigure(2, weight=1)  # expand Info to bottom
 
         self.callback = callback
@@ -209,33 +209,43 @@ class SubjectList:
 
         for section in subject.sections:
             if not section.section_run:
-                display_name = f"{subject.name} {'HL' if subject.level == 1 else 'SL'}"
                 self.labels.append(
-                    SubjectLabel(self.frame, display_name, section.name, subject.id)
+                    SubjectLabel(
+                        self.frame,
+                        subject.name,
+                        subject.level,
+                        subject.id,
+                        section.name,
+                    )
                 )
                 self.labels[-1].frame.grid(row=len(self.labels) - 1, sticky="w")
                 break  # we only want the first section not run for each subject
 
 
 class SubjectLabel:
-    def __init__(self, parent, subject_name, section_name, subject_id) -> None:
+    def __init__(
+        self, parent, subject_name, subject_level, subject_id, section_name
+    ) -> None:
         """
         Initializes the UI for a single subject's label
 
         Args:
             parent (ttk.Frame): parent SubjectList frame
             subject_name (str): name of the subject
-            section_name (str): name of the section
+            subject_level (int): level of the subject (1 for HL, 0 for SL)
             subject_id (int): id of the subject
+            section_name (str): name of the section
         """
 
         self.id = subject_id
+        self.subject_name = subject_name
+        self.subject_level = subject_level
 
         self.frame = ttk.Frame(parent, width=440)
 
         self.subject_name_label = ttk.Label(
             self.frame,
-            text=subject_name,
+            text=self.display_name,
             wraplength=440,
             justify="left",
             anchor="w",
@@ -253,6 +263,24 @@ class SubjectLabel:
             foreground="#838383",
             font=HEADING[2],
         ).grid(row=1, column=0, sticky="w")
+
+    @property
+    def display_name(self):
+        return f"{self.subject_name} {'HL' if self.subject_level == 1 else 'SL'}"
+
+    def update_details(self, name=None, level=None):
+        """
+        Updates the subject name label based on new data
+
+        Args:
+            name (str): new name of the subject
+            level (int): new level of the subject
+        """
+        if name is not None:
+            self.subject_name = name
+        if level is not None:
+            self.subject_level = level
+        self.subject_name_label.configure(text=self.display_name)
 
 
 class Info:

@@ -323,7 +323,7 @@ class TimerPage(ttk.Frame):
         if timer:
             for subject_label in timer.subject_list.labels:
                 if subject_label.id == subject_id:
-                    subject_label.subject_name_label.configure(text=name)
+                    subject_label.update_details(name)
                     break
         else:
             return Exception("Subject not found")
@@ -344,6 +344,23 @@ class TimerPage(ttk.Frame):
                     if subject_label.id == subject_id:
                         subject_label.frame.destroy()
                         break
+        else:
+            return Exception("Subject not found")
+
+    def update_subject_level(self, subject_id, level):
+        """
+        Updates the level of the subject with the given ID
+
+        Args:
+            subject_id (int): ID of the subject to be updated
+            level (int): New level of the subject (0 for SL, 1 for HL)
+        """
+        timer = self.get_timer_by_id(subject_id)
+        if timer:
+            for subject_label in timer.subject_list.labels:
+                if subject_label.id == subject_id:
+                    subject_label.update_details(level=level)
+                    break
         else:
             return Exception("Subject not found")
 
@@ -377,6 +394,7 @@ class EditorPage(ttk.Frame):
             self.configure_subject,
             self.rename_subject,
             self.remove_subject,
+            self.toggle_subject_level,
             self.controller.subjects,
             self.controller.active_subjects,
         )
@@ -465,6 +483,20 @@ class EditorPage(ttk.Frame):
 
         # update name in TimerPage
         self.controller.timer_page.update_subject_name(subject_id, new_name)
+
+    def toggle_subject_level(self, subject_id):
+        # update level in subject object
+        subject = self.controller.get_subject(subject_id)
+        if subject.level == 0:
+            subject.level = 1
+        else:
+            subject.level = 0
+
+        # update level in listbox
+        self.listbox.update_list()
+
+        # update level in TimerPage
+        self.controller.timer_page.update_subject_level(subject_id, subject.level)
 
     def register_sections(self, name_list, hours_list, minutes_list):
         """

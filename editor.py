@@ -399,6 +399,7 @@ class EditorSubjectList:
         configure_callback,
         rename_callback,
         remove_callback,
+        level_callback,
         subject_list,
         active_subject_list,
     ):
@@ -410,12 +411,14 @@ class EditorSubjectList:
             configure_callback (function): EditorPage.configure_subject()
             rename_callback (function): EditorPage.rename_subject()
             remove_callback (function): EditorPage.remove_subject()
+            level_callback (function): EditorPage.toggle_subject_level()
             subject_list (list): List of subjects without active timers
             active_subject_list (list): List of subjects with active timers
         """
         self.configure_callback = configure_callback
         self.rename_callback = rename_callback
         self.remove_callback = remove_callback
+        self.level_callback = level_callback
 
         self.choose_subject_label = parent.create_text(
             41,
@@ -462,7 +465,14 @@ class EditorSubjectList:
         )
         self.rename_button.place(x=170, y=670)
 
-        # TODO: button to change subject level
+        self.change_level_button = ttk.Button(
+            parent,
+            text="Change Level",
+            command=self.toggle_level,
+            state="disabled",
+            bootstyle="warning",
+        )
+        self.change_level_button.place(x=300, y=670)
 
     def update_list(self):
         """
@@ -498,17 +508,23 @@ class EditorSubjectList:
         # enable remove and rename subject buttons
         self.remove_button["state"] = "normal"
         self.rename_button["state"] = "normal"
+        self.change_level_button["state"] = "normal"
 
         selected_index = self.listbox.curselection()[0]
         selected_id = self.subject_ids[selected_index]
         self.configure_callback(selected_id)
 
-    def remove_subject(self):
+    @property
+    def selected_id(self):
         selected_index = self.listbox.curselection()[0]
         selected_id = self.subject_ids[selected_index]
-        self.remove_callback(selected_id)
+        return selected_id
+
+    def remove_subject(self):
+        self.remove_callback(self.selected_id)
 
     def rename_subject(self):
-        selected_index = self.listbox.curselection()[0]
-        selected_id = self.subject_ids[selected_index]
-        self.rename_callback(selected_id)
+        self.rename_callback(self.selected_id)
+
+    def toggle_level(self):
+        self.level_callback(self.selected_id)
