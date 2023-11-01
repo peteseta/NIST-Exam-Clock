@@ -8,7 +8,7 @@ from style import HEADING
 
 
 class Timer:
-    # FUTURE: use unique id to allow changing details after starting timer
+    # TODO: use unique id to allow changing details after starting timer
     def __init__(self, parent, callback, subjects_with_duration, duration) -> None:
         """
         Initializes the UI component for one timer
@@ -20,7 +20,7 @@ class Timer:
             subjects_with_duration (list): list of Subject objs with the same duration
             (datetime.timedelta): duration of the timer
         """
-        self.frame = ttk.Frame(parent, padding=10, bootstyle="warning")
+        self.frame = ttk.Frame(parent, padding=10)
         self.frame.grid_rowconfigure(2, weight=1)  # expand Info to bottom
 
         self.callback = callback
@@ -152,7 +152,7 @@ class ProgressBar:
             duration (datetime.timedelta): total duration of the section
         """
 
-        # FUTURE: flash warning at 5 and 30min if applicable
+        # TODO: flash warning at 5 and 30min if applicable
 
         if elapsed.total_seconds() < 3600:
             elapsed_text = str(elapsed)[2:7]  # format as MM:SS
