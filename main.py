@@ -62,6 +62,8 @@ class App(tk.Tk):
         Initializes base data structures
         """
 
+        # FIXME: resizing breaks the border (clockheader)
+
         self.subjects = []
         self.active_subjects = []
 
@@ -95,7 +97,7 @@ class App(tk.Tk):
         popup.geometry(f"{width}x{height}")
         frame_class(popup, self)
 
-    def get_subject(self, requested_id):
+    def get_subject(self, requested_id) -> Subject:
         """
         Returns the subject that has the given ID.
 
@@ -103,7 +105,7 @@ class App(tk.Tk):
             requested_id (int): ID of the subject to be returned.
 
         Returns:
-            Subject: Subject with the given ID.
+            Subject: Subject object with the given ID.
         """
 
         for subject in self.subjects + self.active_subjects:
@@ -112,7 +114,7 @@ class App(tk.Tk):
 
 
 # TODO: add stop exams button
-# FUTURE: add custom start (choose subjects to start)
+# TODO: add custom start (choose subjects to start)
 class ClockHeader(ttk.Frame):
     def __init__(self, parent, controller):
         """
@@ -150,12 +152,12 @@ class ClockHeader(ttk.Frame):
 
         self.advance_button = ttk.Button(
             self,
-            text="Start Next Section(s)",
+            text="Clear Finished",
             command=lambda: self.controller.timer_page.advance_timers(),
             bootstyle="secondary",
             state="disabled",
         )
-        self.advance_button.place(x=1510, y=20, width=150, height=35)
+        self.advance_button.place(x=1540, y=20, width=120, height=35)
 
         self.show_editor_button = ttk.Button(
             self,
@@ -183,6 +185,9 @@ class TimerPage(ttk.Frame):
             parent (ttk.Frame): Parent tkinter container, for the UI elements
             controller (App): Master instance of the app to access subject/section data
         """
+
+        # TODO: separation between timers (white and grey)
+
         self.controller = controller
         ttk.Frame.__init__(self, parent, padding=20)
         self.grid_rowconfigure(0, weight=1)
@@ -238,7 +243,7 @@ class TimerPage(ttk.Frame):
 
     def draw_timers(self):
         """
-        Draws the timers on the page
+        Populates the timerpage with Timer objects
         """
         for index, timer in enumerate(self.timers):
             timer.frame.grid(row=0, column=index, sticky="nsew")
@@ -252,6 +257,7 @@ class TimerPage(ttk.Frame):
         for timer in self.timers:
             if not timer.is_running:
                 # Mark subjects as active
+
                 for subject in timer.subjects:
                     self.controller.active_subjects.append(subject)
                     if subject in self.controller.subjects:
@@ -293,7 +299,7 @@ class TimerPage(ttk.Frame):
         Destroys the finished timers.
         Regroups the remaining sections by duration and creates new timers.
         """
-
+        
         # destroy finished timers
         for timer in self.timers:
             if timer.finished:
@@ -454,6 +460,12 @@ class EditorPage(ttk.Frame):
         )
 
     def remove_subject(self, subject_id):
+        """
+        Called by editor.EditorSubjectList to remove a subject
+
+        Args:
+            subject_id (int): id of subject to remove
+        """
         subject = self.controller.get_subject(subject_id)
 
         # remove subject object
@@ -470,8 +482,13 @@ class EditorPage(ttk.Frame):
         self.controller.timer_page.remove_subject(subject_id)
 
     def rename_subject(self, subject_id):
-        # dialog = QueryDialog("New name:")
-        # dialog.show()
+        """
+        Called by editor.EditorSubjectList to rename a subject
+        Creates a dialog to get the new name
+
+        Args:
+            subject_id (int): id of subject to rename
+        """
         new_name = simpledialog.askstring("Rename subject", "New name:")
 
         # update name in subject object
@@ -485,6 +502,12 @@ class EditorPage(ttk.Frame):
         self.controller.timer_page.update_subject_name(subject_id, new_name)
 
     def toggle_subject_level(self, subject_id):
+        """
+        Called by editor.EditorSubjectList to toggle the level of a subject
+
+        Args:
+            subject_id (int): id of subject to toggle the level of
+        """
         # update level in subject object
         subject = self.controller.get_subject(subject_id)
         if subject.level == 0:
