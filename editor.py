@@ -79,8 +79,6 @@ class EditorSectionList:
         Each section must have a name and at least 1 minute duration
         If all entries are valid, the Save button in EditorSectionModify is enabled.
         If there are already 4 sections, the Add button is disabled.
-
-        Accepts *args due to trace_add() requiring it for the callback.
         """
 
         # no more than 4 sections
@@ -108,6 +106,8 @@ class EditorSectionList:
         Retrieves the data from all the entries,
         passes them to the callback as parallel arrays
         """
+        self.modify.save_button.config(text="Saved!")
+
         name_list = [component.name_var.get() for component in self.components]
         hours_list = [component.hours_var.get() for component in self.components]
         minutes_list = [component.minutes_var.get() for component in self.components]
@@ -366,7 +366,7 @@ class EditorNewSubject:
         self.subject_name = self.subject_name_entry.get()
 
         if self.subject_name.strip() == "" or self.level == -1:
-            self.status_msg("Please fill in all fields")
+            self.status_msg("Please complete all fields")
             return
 
         self.reset_msg()
@@ -496,13 +496,16 @@ class EditorSubjectList:
             display_name = f"{subject.name} {'HL' if subject.level == 1 else 'SL'}"
             self.listbox.insert(END, display_name)
 
+    @property
+    def selected_id(self):
+        selected_index = self.listbox.curselection()[0]
+        selected_id = self.subject_ids[selected_index]
+        return selected_id
+
     def handle_selection(self, event):
         """
         Calls EditorPage.configure_subject() to draw the section configuration
         component each time a new subject is selected
-
-        Args:
-            event (tkinter event): Passed into function by bind(); unused
         """
 
         # enable remove and rename subject buttons
@@ -510,15 +513,7 @@ class EditorSubjectList:
         self.rename_button["state"] = "normal"
         self.change_level_button["state"] = "normal"
 
-        selected_index = self.listbox.curselection()[0]
-        selected_id = self.subject_ids[selected_index]
-        self.configure_callback(selected_id)
-
-    @property
-    def selected_id(self):
-        selected_index = self.listbox.curselection()[0]
-        selected_id = self.subject_ids[selected_index]
-        return selected_id
+        self.configure_callback(self.selected_id)
 
     def remove_subject(self):
         self.remove_callback(self.selected_id)
