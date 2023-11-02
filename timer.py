@@ -12,7 +12,7 @@ class Timer:
     def __init__(self, parent, callback, subjects_with_duration, duration) -> None:
         """
         Initializes the UI component for one timer
-        (one timer for one duration; one timer can have multiple subjects)
+        (one timer = one duration, group of subjects)
 
         Args:
             parent (TimerPage): parent tkinter frame
@@ -194,7 +194,7 @@ class SubjectList:
         self.frame = ttk.Frame(parent)
         self.frame.grid(row=1, sticky="nw")
 
-        self.labels = []
+        self.labels: list[SubjectLabel] = []
 
         for subject in subjects:
             self.add_subject(subject)
