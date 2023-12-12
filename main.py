@@ -62,8 +62,9 @@ class App(tk.Tk):
         self.subjects: list[Subject] = []
         self.active_subjects: list[Subject] = []
 
-        self.subjects.append(Subject("English", 0))
-        self.subjects[0].sections.append(Section("Paper 1", 0, 1))
+        # debug
+        # self.subjects.append(Subject("English", 0))
+        # self.subjects[0].sections.append(Section("Paper 1", 0, 1))
 
         self.root = ttk.Window(themename="robin")
         self.root.title("NIST Exam Clock")
@@ -80,7 +81,7 @@ class App(tk.Tk):
         self.header.grid(row=0, column=0, sticky="nsew")
 
     def create_new_window(
-        self, frame_class: type[EditorPage], width: int = 1520, height: int = 760
+        self, frame_class, width: int = 1520, height: int = 760
     ) -> None:
         """
         Handles creating a new popup window, e.g. for the editor
