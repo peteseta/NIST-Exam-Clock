@@ -463,15 +463,17 @@ class EditorPage(ttk.Frame):
         """
         new_name = simpledialog.askstring("Rename subject", "New name:")
 
-        # update name in subject object
-        subject: Subject = self.controller.get_subject(subject_id)
-        subject.name = new_name
+        # only update the name if Ok was pressed on the simpledialog, not cancel
+        if new_name is not None:
+            # update name in subject object
+            subject: Subject = self.controller.get_subject(subject_id)
+            subject.name = new_name
 
-        # update name in listbox
-        self.listbox.update_list()
+            # update name in listbox
+            self.listbox.update_list()
 
-        # update name in TimerPage
-        self.controller.timer_page.update_subject_name(subject_id, new_name)
+            # update name in TimerPage
+            self.controller.timer_page.update_subject_name(subject_id, new_name)
 
     def toggle_subject_level(self, subject_id: int):
         """
