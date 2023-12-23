@@ -69,16 +69,19 @@ class App(tk.Tk):
         self.root = ttk.Window(themename="robin")
         self.root.title("NIST Exam Clock")
         self.root.geometry("1920x1080")
+        self.root.minsize(560, 1)
 
         container = ttk.Frame(self.root, height=900, width=1600)
         container.pack(side="top", fill="both", expand=True)
-        container.grid_rowconfigure(1, weight=1)
+        
+        self.header = ClockHeader(container, self)
+        self.header.grid(row=0, column=0, sticky="nsew")
+        container.grid_rowconfigure(0, weight=0)  # make the header row not resizable
+        container.grid_columnconfigure(0, weight=1)  # make the column resizable
 
         self.timer_page = TimerPage(container, self)
         self.timer_page.grid(row=1, column=0, sticky="nsew", padx=0, pady=0)
-
-        self.header = ClockHeader(container, self)
-        self.header.grid(row=0, column=0, sticky="nsew")
+        container.grid_rowconfigure(1, weight=1)
 
     def create_new_window(
         self, frame_class, width: int = 1520, height: int = 760
@@ -107,17 +110,12 @@ class App(tk.Tk):
         return None
 
 
-# TODO: add stop exams button
 # TODO: add custom start (choose subjects to start)
 class ClockHeader(ttk.Frame):
     def __init__(self, parent, controller) -> None:
         """
         Initializes the UI for the header of the exam clock
         Shows the time and buttons to start/stop/edit exams
-
-        Args:
-            parent (ttk.Frame): Parent tkinter container, for the UI elements
-            controller (App): Master instance of the app class to call create_new_window
         """
         self.controller = controller
         ttk.Frame.__init__(self, parent)
@@ -136,30 +134,98 @@ class ClockHeader(ttk.Frame):
         )
         self.update_clock()
 
-        self.start_button = ttk.Button(
-            self,
-            text="Start All Exams",
-            command=lambda: self.controller.timer_page.start_timers(),
-            bootstyle="secondary",
-        )
-        self.start_button.place(x=1670, y=20, width=120, height=35)
+        # initialize style
+        s = ttk.Style()
+        s.configure('grey.TFrame', background='#EEEEEE')
 
-        self.advance_button = ttk.Button(
-            self,
-            text="Clear Finished",
-            command=lambda: self.controller.timer_page.advance_timers(),
-            bootstyle="secondary",
-            state="disabled",
-        )
-        self.advance_button.place(x=1540, y=20, width=120, height=35)
+        # subframe for buttons
+        self.button_frame = ttk.Frame(self, style='grey.TFrame')
+        self.button_frame.place(relx=0.99, rely=0.25, width=500, height=35, anchor='ne')
 
-        self.show_editor_button = ttk.Button(
-            self,
-            text="Edit Exams",
-            command=lambda: self.controller.create_new_window(EditorPage),
-            bootstyle="secondary",
-        )
-        self.show_editor_button.place(x=1800, y=20, width=100, height=35)
+        self.buttons = [
+            ttk.Button(
+                self.button_frame,
+                text="Edit",
+                command=lambda: self.controller.create_new_window(EditorPage),
+                bootstyle="secondary",
+                state="normal",
+            ),
+            ttk.Button(
+                self.button_frame,
+                text="Start",
+                command=lambda: self.on_start_button_click(),
+                bootstyle="secondary",
+                state="normal",
+            ),
+            ttk.Button(
+                self.button_frame,
+                text="Pause",
+                command=lambda: self.on_pause_button_click(),
+                bootstyle="secondary",
+                state="disabled",
+            ),
+            ttk.Button(
+                self.button_frame,
+                text="Resume",
+                command=lambda: self.on_resume_button_click(),
+                bootstyle="secondary",
+                state="disabled",
+            ),
+            ttk.Button(
+                self.button_frame,
+                text="Stop",
+                command=lambda: self.on_stop_button_click(),
+                bootstyle="secondary",
+                state="disabled",
+            ),
+            ttk.Button(
+                self.button_frame,
+                text="Next",
+                command=lambda: self.controller.timer_page.advance_timers(),
+                bootstyle="secondary",
+                state="disabled",
+            ),
+        ]
+
+        self.update_buttons()
+
+    def update_buttons(self):
+        # clear all buttons
+        for button in self.buttons:
+            button.pack_forget()
+            print(f"forgot {button['text']}")
+
+        # repack buttons based on their state
+        for button in self.buttons:
+            if not button.state():
+                button.pack(side="right")
+
+    def on_start_button_click(self):
+        self.buttons[1]['state'] = 'disabled'  # Disable the "Start" button
+        self.buttons[2]['state'] = 'normal'  # Enable the "Pause" button
+        self.buttons[4]['state'] = 'normal'  # Enable the "Stop" button
+        self.update_buttons()
+        self.controller.timer_page.start_timers()
+
+    def on_pause_button_click(self):
+        self.buttons[2]['state'] = 'disabled'  # Disable the "Pause" button
+        self.buttons[3]['state'] = 'normal'  # Enable the "Resume" button
+        self.update_buttons()
+        self.controller.timer_page.pause_timers()
+
+    def on_resume_button_click(self):
+        self.buttons[3]['state'] = 'disabled'  # Disable the "Resume" button
+        self.buttons[2]['state'] = 'normal'  # Enable the "Pause" button
+        self.update_buttons()
+        self.controller.timer_page.resume_timers()
+
+    def on_stop_button_click(self):
+        self.buttons[2]['state'] = 'disabled'  # Disable the "Pause" button
+        self.buttons[3]['state'] = 'disabled'  # Disable the "Resume" button
+        self.buttons[4]['state'] = 'disabled'  # Disable the "Stop" button
+        self.buttons[1]['state'] = 'normal'  # Enable the "Start" button
+        self.update_buttons()
+        self.controller.timer_page.stop_timers()
 
     def update_clock(self) -> None:
         """
@@ -249,15 +315,31 @@ class TimerPage(ttk.Frame):
         """
         for timer in self.timers:
             if not timer.is_running:
-                # Mark subjects as active
-
+                timer.start_timer()
+                
+                # mark subjects as active
                 for subject in timer.subjects:
                     self.controller.active_subjects.append(subject)
                     if subject in self.controller.subjects:
                         self.controller.subjects.remove(subject)
-                timer.start_timer()
+    
+    def resume_timers(self):
+        for timer in self.timers:
+            timer.resume_timer()
+            
+    def pause_timers(self):
+        for timer in self.timers:
+            timer.pause_timer()
 
-        self.controller.header.advance_button.configure(state="disabled")
+    def stop_timers(self):
+        for timer in self.timers:
+            if timer.is_running:
+                timer.stop_timer()
+                # mark subjects as inactive
+                for subject in timer.subjects:
+                    self.controller.subjects.append(subject)
+                    if subject in self.controller.active_subjects:
+                        self.controller.active_subjects.remove(subject)
 
     def finish(self, subjects: list[Subject]):
         """
@@ -282,7 +364,8 @@ class TimerPage(ttk.Frame):
                 self.controller.active_subjects.remove(subject)
 
         # activate button to start the next section
-        self.controller.header.advance_button.configure(state="normal")
+        # self.controller.header.advance_button.configure(state="normal")
+        self.controller.header.advance_button.pack()
 
     def advance_timers(self):
         """

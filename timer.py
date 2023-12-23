@@ -64,12 +64,35 @@ class Timer:
 
         self.is_running = True
         self.update_loop()
+        
+    def pause_timer(self):
+        self.is_running = False
+        self.paused_time = datetime.datetime.now()
+
+    def stop_timer(self):
+        self.is_running = False
+        self.elapsed = datetime.timedelta(0)
+        self.remaining = self.duration
+        self.progress_bar.update(self.elapsed, self.remaining, self.duration)
+        self.info.frame.destroy()
+        
+    def resume_timer(self):
+        self.is_running = True
+        pause_duration = datetime.datetime.now() - self.paused_time
+        self.start_time += pause_duration  # adjust the start time
+        self.end_time += pause_duration  # adjust the end time
+        self.info.end_time = self.end_time  # update the end time in the Info class
+        self.update_loop()
 
     def update_loop(self):
         """
         Calculates the elapsed and remaining time
         If the timer is over, calls the finish() function
         """
+        
+        if not self.is_running:
+            return
+    
         self.elapsed = datetime.datetime.now() - self.start_time
         self.remaining = self.end_time - datetime.datetime.now()
 
